@@ -11,20 +11,13 @@
 
 <br/>
 
-[![Latest release](https://img.shields.io/github/v/release/kushagrasinghx/Mhorpix?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/Mhorpix/releases)
-[![License](https://img.shields.io/github/license/kushagrasinghx/Mhorpix?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/Mhorpix/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/kushagrasinghx/Mhorpix/total?style=for-the-badge&labelColor=0d1117)](https://github.com/kushagrasinghx/Mhorpix/releases)
-[![Listening now](https://api.mhorpix.kushagrasingh.in/api/stats/live/badge.svg)](https://api.mhorpix.kushagrasingh.in/api/stats/live)
+[![Latest release](https://img.shields.io/github/v/release/ShadowByte01/Mhorpix-Music?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/releases)
+[![License](https://img.shields.io/github/license/ShadowByte01/Mhorpix-Music?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/ShadowByte01/Mhorpix-Music/total?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/releases)
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Support**](#support) · [**Disclaimer**](#disclaimer)
-
-<br/>
-
-<a href="https://fmhy.net/mobile#youtube-music" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/available/fmhy/cozy.svg" alt="Featured on FMHY" height="55"/></a>
-<a href="https://trendshift.io/repositories/177639?utm_source=trendshift-badge&utm_medium=badge&utm_campaign=badge-trendshift-177639" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/177639/daily?language=Kotlin" alt="kushagrasinghx%2FMhorpix | Trendshift" width="250" height="55"/></a>
-<a href="https://trendshift.io/repositories/177639?utm_source=trendshift-badge&utm_medium=badge&utm_campaign=badge-trendshift-177639" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/177639/weekly?language=Kotlin" alt="kushagrasinghx%2FMhorpix | Trendshift" width="250" height="55"/></a>
+[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Disclaimer**](#disclaimer)
 
 </div>
 
@@ -89,12 +82,9 @@
 
 <h1><a id="download"></a>Download</h1>
 
-<a href="https://github.com/kushagrasinghx/Mhorpix/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
-<a href="https://github.com/kushagrasinghx/Mhorpix/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/windows/cozy.svg" alt="Download for Windows" height="55"/></a>
+<a href="https://github.com/ShadowByte01/Mhorpix-Music/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/kushagrasinghx/Mhorpix/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
-
-For the Windows and Linux desktop app, see [DESKTOP.md](DESKTOP.md).
+Grab the latest signed APK from the [Releases](https://github.com/ShadowByte01/Mhorpix-Music/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
 
 </div>
 
@@ -107,28 +97,6 @@ For the Windows and Linux desktop app, see [DESKTOP.md](DESKTOP.md).
 We welcome contributions to Mhorpix! Please review our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a Pull Request.
 
 [**Contributing Guide**](CONTRIBUTING.md) · [**Code of Conduct**](CODE_OF_CONDUCT.md) · [**Maintainers**](MAINTAINERS.md) · [**Additional Docs**](ADDITIONAL.md)
-
-### Thanks to all contributors ❤
-
-<a href="https://github.com/kushagrasinghx/Mhorpix/graphs/contributors">
-  <img src="https://raw.githubusercontent.com/kushagrasinghx/Mhorpix/contributors/contributors.svg" />
-</a>
-
-</div>
-
----
-
-<div align="center">
-
-<h1><a id="support"></a>Support</h1>
-
-Mhorpix is free and always will be — if it's earned a spot in your rotation, you can chip in here:
-
-<a href="https://ko-fi.com/kushagrasinghx" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/kofi-singular-alt/cozy.svg" alt="Support me on Ko-fi" height="55"/></a>
-<a href="https://paypal.me/kuxhagrasingh" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/donate/paypal-plural/cozy.svg" alt="Support us on PayPal" height="55"/></a>
-
-<br/>
-<img src="upi_support.jpg" alt="UPI Support" width="250" />
 
 </div>
 
