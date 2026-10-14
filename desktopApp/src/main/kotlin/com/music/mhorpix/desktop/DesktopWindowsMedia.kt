@@ -85,6 +85,9 @@ internal object DesktopWindowsMedia {
 
     private var smtcPointer: Pointer? = null
     private var smtcWindow: WinDef.HWND? = null
+    private var smtcWndProc: WinUser.WindowProc? = null
+    private const val SMTC_CLASS_NAME = "MhorpixSmtcWindow"
+
     private var mediaThread: Thread? = null
     private var mediaThreadId: Int = 0
 
@@ -136,10 +139,10 @@ internal object DesktopWindowsMedia {
                 if (msg == WinUser.WM_KEYDOWN || msg == WinUser.WM_SYSKEYDOWN) {
                     val vk = info.vkCode
                     when (vk) {
-                        0xB3 -> triggerDebounced(BUTTON_PLAY)        // VK_MEDIA_PLAY_PAUSE
-                        0xB0 -> triggerDebounced(BUTTON_NEXT)        // VK_MEDIA_NEXT_TRACK
-                        0xB1 -> triggerDebounced(BUTTON_PREVIOUS)    // VK_MEDIA_PREV_TRACK
-                        0xB2 -> triggerDebounced(BUTTON_STOP)        // VK_MEDIA_STOP
+                        0xB3, 0xFA -> triggerDebounced(BUTTON_PLAY)        // VK_MEDIA_PLAY_PAUSE, VK_PLAY
+                        0xB0 -> triggerDebounced(BUTTON_NEXT)              // VK_MEDIA_NEXT_TRACK
+                        0xB1 -> triggerDebounced(BUTTON_PREVIOUS)          // VK_MEDIA_PREV_TRACK
+                        0xB2 -> triggerDebounced(BUTTON_STOP)              // VK_MEDIA_STOP
                     }
                 }
             }
@@ -155,7 +158,8 @@ internal object DesktopWindowsMedia {
         // 2. Install WinRT SystemMediaTransportControls
         runCatching {
             val cb = combase ?: return@runCatching
-            cb.RoInitialize(1) // RO_INIT_SINGLETHREADED
+            // RO_INIT_SINGLETHREADED = 0 (STA apartment required for window-associated WinRT objects)
+            cb.RoInitialize(0)
 
             val str = "Windows.Media.SystemMediaTransportControls"
             val hstrRef = PointerByReference()
@@ -172,7 +176,31 @@ internal object DesktopWindowsMedia {
             val interopVtable = interop.getPointer(0)
             val getForWindowFunc = Function.getFunction(interopVtable.getPointer(6L * Native.POINTER_SIZE))
 
-            smtcWindow = user32.CreateWindowEx(0, "STATIC", "MhorpixSMTC", 0, 0, 0, 0, 0, null, null, null, null)
+            val wndProc = object : WinUser.WindowProc {
+                override fun callback(hwnd: WinDef.HWND, uMsg: Int, wParam: WinDef.WPARAM, lParam: WinDef.LPARAM): WinDef.LRESULT {
+                    return user32.DefWindowProc(hwnd, uMsg, wParam, lParam)
+                }
+            }
+            smtcWndProc = wndProc
+
+            val hInst = Kernel32.INSTANCE.GetModuleHandle(null)
+            val wndClass = WinUser.WNDCLASSEX().apply {
+                cbSize = size()
+                lpfnWndProc = wndProc
+                hInstance = hInst
+                lpszClassName = SMTC_CLASS_NAME
+            }
+            user32.RegisterClassEx(wndClass)
+
+            smtcWindow = user32.CreateWindowEx(
+                0,
+                SMTC_CLASS_NAME,
+                "Mhorpix",
+                0,
+                0, 0, 0, 0,
+                null, null, hInst, null
+            )
+
             val smtcIid = GUID.fromString("{99fa3ff4-1742-42a6-902e-087d41f965ec}")
             val smtcRef = PointerByReference()
             val hrGet = getForWindowFunc.invokeInt(arrayOf(interop, smtcWindow?.pointer, smtcIid.pointer, smtcRef))
@@ -185,9 +213,9 @@ internal object DesktopWindowsMedia {
             Function.getFunction(smtcVtable.getPointer(11L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, 1))
             // put_IsPlayEnabled(true) -> index 13
             Function.getFunction(smtcVtable.getPointer(13L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, 1))
-            // put_IsStopEnabled(true) -> index 15
+            // put_IsPauseEnabled(true) -> index 15
             Function.getFunction(smtcVtable.getPointer(15L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, 1))
-            // put_IsPauseEnabled(true) -> index 17
+            // put_IsStopEnabled(true) -> index 17
             Function.getFunction(smtcVtable.getPointer(17L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, 1))
             // put_IsPreviousEnabled(true) -> index 25
             Function.getFunction(smtcVtable.getPointer(25L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, 1))
@@ -252,8 +280,10 @@ internal object DesktopWindowsMedia {
     }
 
     private fun cleanupSmtcAndHook() {
+        val user32 = User32.INSTANCE
+
         keyboardHook?.let {
-            User32.INSTANCE.UnhookWindowsHookEx(it)
+            user32.UnhookWindowsHookEx(it)
             keyboardHook = null
         }
         keyboardHookProc = null
@@ -268,9 +298,11 @@ internal object DesktopWindowsMedia {
         }
 
         smtcWindow?.let {
-            User32.INSTANCE.DestroyWindow(it)
+            user32.DestroyWindow(it)
             smtcWindow = null
         }
+        runCatching { user32.UnregisterClass(SMTC_CLASS_NAME, Kernel32.INSTANCE.GetModuleHandle(null)) }
+        smtcWndProc = null
 
         eventHandlerComObject = null
         eventHandlerVtable = null
@@ -287,7 +319,9 @@ internal object DesktopWindowsMedia {
         val last = lastTriggerTime.get()
         if (now - last > 180) {
             lastTriggerTime.set(now)
-            onButton(button)
+            java.awt.EventQueue.invokeLater {
+                onButton(button)
+            }
         }
     }
 
@@ -300,8 +334,8 @@ internal object DesktopWindowsMedia {
 
         runCatching {
             val smtcVtable = smtc.getPointer(0)
-            // put_PlaybackStatus -> index 7: 4 = Playing, 5 = Paused
-            val status = if (state.isPlaying) 4 else 5
+            // put_PlaybackStatus -> index 7: 3 = Playing, 4 = Paused
+            val status = if (state.isPlaying) 3 else 4
             Function.getFunction(smtcVtable.getPointer(7L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, status))
 
             // get_DisplayUpdater -> index 8

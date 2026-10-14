@@ -224,6 +224,7 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
@@ -3058,6 +3059,13 @@ fun MhorpixDesktopApp() {
                         }
                         else -> false
                     }
+                }.onKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyUp && event.key == Key.Spacebar) {
+                        if (selectedSong != null) {
+                            togglePlayPauseFromUser()
+                            true
+                        } else false
+                    } else false
                 },
                 topBar = { compact ->
                     DesktopTopBar(
