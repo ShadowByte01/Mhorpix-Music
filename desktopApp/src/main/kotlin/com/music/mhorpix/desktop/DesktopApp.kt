@@ -1702,6 +1702,7 @@ fun MhorpixDesktopApp() {
                 onNext = ::playNext,
                 onPrevious = ::playPrevious,
                 onStop = ::pauseFromUser,
+                onPlayPause = ::togglePlayPauseFromUser,
             ),
         )
         onDispose { DesktopWindowsMedia.stop() }
