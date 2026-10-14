@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val appVersion: String = providers.gradleProperty("mhorpix.version").orNull
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
-    ?: "1.3"
+    ?: "1.4"
 
 /** Which platform this build is *for*, which is the host unless told otherwise. */
 val hostIsWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
@@ -26,7 +26,7 @@ val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 // Windows installer metadata requires MAJOR.MINOR.BUILD even though the app's public version is
 // intentionally displayed without a patch number (1.7 rather than 1.7.0).
 // The build number is the desktop version code; it also keeps "-beta1" out of the numeric installer version.
-val desktopVersionCode = 30
+val desktopVersionCode = 31
 val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") + ".$desktopVersionCode"
 
 // FFmpeg decodes audio; see DesktopAudioDecoder.
@@ -467,14 +467,25 @@ val windowsPortableAssemble by tasks.registering {
         check(problems.isEmpty()) { "windowsPortable: " + problems.joinToString("; ") }
 
         val analyser = File(analysisNativeDir.get().asFile, "mhorpix_analysis.dll").isFile
-        logger.lifecycle(
-            if (analyser) {
-                "windowsPortable: verified — Compose runtime, Windows renderer, Windows FFmpeg, Automix analyser."
-            } else {
-                "windowsPortable: verified, but no mhorpix_analysis.dll — Automix will not run in this archive. " +
-                    "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc"
-            },
-        )
+        val smtc = File(analysisNativeDir.get().asFile, "mhorpix_smtc.dll").isFile
+        val message = buildString {
+            append("windowsPortable: verified")
+            when {
+                analyser && smtc ->
+                    append(" — Compose runtime, Windows renderer, Windows FFmpeg, Automix analyser, SMTC media controls all present.")
+                !analyser && !smtc ->
+                    append(" — no mhorpix_analysis.dll (Automix will not run) and no mhorpix_smtc.dll (Windows media controls will not work). " +
+                        "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc")
+                !analyser ->
+                    append(" — no mhorpix_analysis.dll — Automix will not run in this archive. " +
+                        "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc")
+                !smtc ->
+                    append(" — no mhorpix_smtc.dll — Windows media controls (media keys, Bluetooth buttons, " +
+                        "volume flyout card) will not work. The SMTC library is only built with MSVC or a " +
+                        "MinGW that has the WinRT ABI headers. See CMakeLists.txt for details.")
+            }
+        }
+        logger.lifecycle(message)
     }
 }
 

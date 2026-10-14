@@ -1725,6 +1725,10 @@ fun MhorpixDesktopApp() {
         onDispose { DesktopMacMedia.stop() }
     }
 
+    LaunchedEffect(Unit) {
+        DesktopDiscordRpc.refreshLocalClient()
+    }
+
     LaunchedEffect(playbackSpeed) { playbackEngine.setPlaybackSpeed(playbackSpeed) }
     LaunchedEffect(volume) { playbackEngine.setVolume(volume) }
     LaunchedEffect(audioQuality) { playbackEngine.setAudioQuality(audioQuality.name) }
@@ -6119,7 +6123,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("mhorpix.version") ?: "1.3" }
+    val version = remember { System.getProperty("mhorpix.version") ?: "1.4" }
     Text(
         text = "Mhorpix $version\nDeveloped by Abhinit\nA product of Xentara",
         style = MaterialTheme.typography.labelSmall,

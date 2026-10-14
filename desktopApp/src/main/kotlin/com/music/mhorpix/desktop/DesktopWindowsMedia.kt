@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicLong
  * headphones) via a Low-Level Keyboard Hook (WH_KEYBOARD_LL) and WinRT System
  * Media Transport Controls (SMTC).
  *
- * Implemented using JNA so it runs on all Windows 10/11 machines without requiring
- * any external MSVC or MinGW compiled DLLs.
+ * Implemented using pure JNA COM interop so it runs on all Windows 10/11 machines
+ * without requiring any external MSVC or MinGW compiled DLLs.
  */
 internal object DesktopWindowsMedia {
 
@@ -87,11 +87,14 @@ internal object DesktopWindowsMedia {
     private var smtcWindow: WinDef.HWND? = null
     private var smtcWndProc: WinUser.WindowProc? = null
     private const val SMTC_CLASS_NAME = "MhorpixSmtcWindow"
+    private const val WM_PUBLISH = WinUser.WM_USER + 101
 
     private var mediaThread: Thread? = null
     private var mediaThreadId: Int = 0
 
     private val lastTriggerTime = AtomicLong(0)
+    @Volatile
+    private var pendingPlaybackState: DesktopPlaybackState? = null
 
     fun start(controller: Controller) {
         this.controller = controller
@@ -132,17 +135,19 @@ internal object DesktopWindowsMedia {
     private fun initSmtcAndHook() {
         val user32 = User32.INSTANCE
 
-        // 1. Install Low-Level Keyboard Hook
+        // 1. Install Low-Level Keyboard Hook for media keys
         keyboardHookProc = WinUser.LowLevelKeyboardProc { nCode, wParam, info ->
             if (nCode >= 0) {
                 val msg = wParam.toInt()
                 if (msg == WinUser.WM_KEYDOWN || msg == WinUser.WM_SYSKEYDOWN) {
                     val vk = info.vkCode
                     when (vk) {
-                        0xB3, 0xFA -> triggerDebounced(BUTTON_PLAY)        // VK_MEDIA_PLAY_PAUSE, VK_PLAY
-                        0xB0 -> triggerDebounced(BUTTON_NEXT)              // VK_MEDIA_NEXT_TRACK
-                        0xB1 -> triggerDebounced(BUTTON_PREVIOUS)          // VK_MEDIA_PREV_TRACK
-                        0xB2 -> triggerDebounced(BUTTON_STOP)              // VK_MEDIA_STOP
+                        0xB3 -> triggerDebounced(BUTTON_PLAY_PAUSE)         // VK_MEDIA_PLAY_PAUSE
+                        0xFA -> triggerDebounced(BUTTON_PLAY)               // VK_PLAY
+                        0x13 -> triggerDebounced(BUTTON_PAUSE)              // VK_PAUSE
+                        0xB0 -> triggerDebounced(BUTTON_NEXT)               // VK_MEDIA_NEXT_TRACK
+                        0xB1 -> triggerDebounced(BUTTON_PREVIOUS)           // VK_MEDIA_PREV_TRACK
+                        0xB2 -> triggerDebounced(BUTTON_STOP)               // VK_MEDIA_STOP
                     }
                 }
             }
@@ -178,6 +183,10 @@ internal object DesktopWindowsMedia {
 
             val wndProc = object : WinUser.WindowProc {
                 override fun callback(hwnd: WinDef.HWND, uMsg: Int, wParam: WinDef.WPARAM, lParam: WinDef.LPARAM): WinDef.LRESULT {
+                    if (uMsg == WM_PUBLISH) {
+                        pendingPlaybackState?.let { doPublish(it) }
+                        return WinDef.LRESULT(0)
+                    }
                     return user32.DefWindowProc(hwnd, uMsg, wParam, lParam)
                 }
             }
@@ -198,7 +207,7 @@ internal object DesktopWindowsMedia {
                 "Mhorpix",
                 0,
                 0, 0, 0, 0,
-                null, null, hInst, null
+                null, null, hInst, null,
             )
 
             val smtcIid = GUID.fromString("{99fa3ff4-1742-42a6-902e-087d41f965ec}")
@@ -274,8 +283,10 @@ internal object DesktopWindowsMedia {
             // add_ButtonPressed -> index 32
             val tokenRef = LongByReference()
             Function.getFunction(smtcVtable.getPointer(32L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, obj, tokenRef))
+
+            DesktopTrackLog.log("Windows media controls: JNA SMTC initialized successfully")
         }.onFailure {
-            DesktopTrackLog.log("SMTC initialization warning: ${it.message}")
+            DesktopTrackLog.log("Windows media controls: SMTC initialization warning: ${it.message}")
         }
     }
 
@@ -325,17 +336,32 @@ internal object DesktopWindowsMedia {
         }
     }
 
-    /** Publishes the current track. Called on every change the shell would show. */
+    /** Publishes the current track. Can be called from any thread. */
     fun publish(state: DesktopPlaybackState) {
         if (!started.get()) return
+        pendingPlaybackState = state
+        val hwnd = smtcWindow
+        if (hwnd != null) {
+            User32.INSTANCE.PostMessage(hwnd, WM_PUBLISH, WinDef.WPARAM(0), WinDef.LPARAM(0))
+        } else {
+            doPublish(state)
+        }
+    }
+
+    /** Internal publish implementation running on the STA thread. */
+    private fun doPublish(state: DesktopPlaybackState) {
         val smtc = smtcPointer ?: return
         val cb = combase ?: return
         val song = state.song
 
         runCatching {
             val smtcVtable = smtc.getPointer(0)
-            // put_PlaybackStatus -> index 7: 3 = Playing, 4 = Paused
-            val status = if (state.isPlaying) 3 else 4
+            // put_PlaybackStatus -> index 7: 2 = Stopped, 3 = Playing, 4 = Paused
+            val status = when {
+                song == null -> 2
+                state.isPlaying -> 3
+                else -> 4
+            }
             Function.getFunction(smtcVtable.getPointer(7L * Native.POINTER_SIZE)).invokeInt(arrayOf(smtc, status))
 
             // get_DisplayUpdater -> index 8
@@ -353,7 +379,7 @@ internal object DesktopWindowsMedia {
                     val music = musicRef.value
                     val musicVtable = music.getPointer(0)
 
-                    val title = song?.title.orEmpty()
+                    val title = song?.title?.ifBlank { null } ?: if (state.isPlaying) "Playing" else ""
                     val artist = song?.artist.orEmpty()
                     val album = song?.albumName.orEmpty()
 
@@ -394,23 +420,25 @@ internal object DesktopWindowsMedia {
                 Function.getFunction(updaterVtable.getPointer(2L * Native.POINTER_SIZE)).invokeInt(arrayOf(updater))
             }
         }.onFailure {
-            DesktopTrackLog.log("SMTC update error: ${it.message}")
+            DesktopTrackLog.log("Windows media controls: SMTC update error: ${it.message}")
         }
     }
 
-    /** Called from the native side when a media key or the shell's card is used. */
+    /** Called from keyboard hook or SMTC event handler when a media key or shell card is pressed. */
     @JvmStatic
     fun onButton(button: Int) {
         val target = controller ?: return
         when (button) {
-            BUTTON_PLAY -> {
-                if (target.onPlayPause != null) target.onPlayPause.invoke()
-                else target.onPlay()
-            }
+            BUTTON_PLAY -> target.onPlay()
             BUTTON_PAUSE -> target.onPause()
             BUTTON_NEXT -> target.onNext()
             BUTTON_PREVIOUS -> target.onPrevious()
             BUTTON_STOP -> target.onStop()
+            BUTTON_PLAY_PAUSE -> {
+                if (target.onPlayPause != null) target.onPlayPause.invoke()
+                else if (pendingPlaybackState?.isPlaying == true) target.onPause()
+                else target.onPlay()
+            }
         }
     }
 
@@ -419,4 +447,5 @@ internal object DesktopWindowsMedia {
     const val BUTTON_NEXT = 2
     const val BUTTON_PREVIOUS = 3
     const val BUTTON_STOP = 4
+    const val BUTTON_PLAY_PAUSE = 5
 }

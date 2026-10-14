@@ -50,6 +50,11 @@ internal object DesktopDiscordRpc {
     private var ipc: DesktopDiscordIpc? = null
     private var lastKey: String? = null
 
+    /** When the IPC socket was last probed, so a dropped connection is not re-checked every frame. */
+    @Volatile
+    private var lastReconnectAttempt: Long = 0L
+    private val RECONNECT_INTERVAL_MS = 30_000L
+
     private val _localClient = MutableStateFlow(false)
 
     /** Whether a Discord on this machine is answering, so no token is needed. */
@@ -66,6 +71,7 @@ internal object DesktopDiscordRpc {
             } else {
                 _localClient.value = ipc != null
             }
+            lastReconnectAttempt = System.currentTimeMillis()
         }
     }
 
@@ -117,6 +123,13 @@ internal object DesktopDiscordRpc {
      */
     fun onPlaybackStateChanged(state: DesktopPlaybackState, speed: Float) {
         if (!_enabled.value) return
+        // The IPC socket is the primary route — it needs no token. If it has
+        // dropped (Discord was restarted, the pipe went away), probe for a
+        // local Discord again rather than silently falling through to the
+        // token route. Throttled so it is not re-checked every frame.
+        if (ipc == null && System.currentTimeMillis() - lastReconnectAttempt > RECONNECT_INTERVAL_MS) {
+            refreshLocalClient()
+        }
         if (_token.value.isBlank() && ipc == null) return
         val song = state.song
         if (song == null || !state.isPlaying) {
