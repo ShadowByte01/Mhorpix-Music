@@ -1707,6 +1707,22 @@ fun MhorpixDesktopApp() {
         onDispose { DesktopWindowsMedia.stop() }
     }
 
+    // The macOS half. The lock-screen widget, the volume flyout's media card,
+    // and the media keys (F7/F8/F9, headphone buttons, Bluetooth) all talk to
+    // this via the MediaRemote private framework — the same one Spotify uses.
+    DisposableEffect(playbackEngine) {
+        DesktopMacMedia.start(
+            DesktopMacMedia.Controller(
+                onPlay = ::playFromUser,
+                onPause = ::pauseFromUser,
+                onNext = ::playNext,
+                onPrevious = ::playPrevious,
+                onStop = ::pauseFromUser,
+            ),
+        )
+        onDispose { DesktopMacMedia.stop() }
+    }
+
     LaunchedEffect(playbackSpeed) { playbackEngine.setPlaybackSpeed(playbackSpeed) }
     LaunchedEffect(volume) { playbackEngine.setVolume(volume) }
     LaunchedEffect(audioQuality) { playbackEngine.setAudioQuality(audioQuality.name) }
@@ -1909,6 +1925,7 @@ fun MhorpixDesktopApp() {
     LaunchedEffect(playback.song?.videoId, playback.isPlaying, playback.durationMs) {
         DesktopScrobbling.onPlaybackStateChanged(playback)
         DesktopWindowsMedia.publish(playback)
+        DesktopMacMedia.publish(playback)
     }
     // Refetched on opening the page rather than cached for the session: the
     // point of it is that something played elsewhere shows up here.
@@ -2457,6 +2474,7 @@ fun MhorpixDesktopApp() {
                 // WASAPI and WinRT, and exitProcess would unload those libraries under them.
                 playbackEngine.shutdown()
                 DesktopWindowsMedia.stop()
+                DesktopMacMedia.stop()
                 exitProcess(0)
             },
         )
@@ -6092,7 +6110,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("mhorpix.version") ?: "1.2" }
+    val version = remember { System.getProperty("mhorpix.version") ?: "1.3" }
     Text(
         text = "Mhorpix $version\nDeveloped by Abhinit\nA product of Xentara",
         style = MaterialTheme.typography.labelSmall,
