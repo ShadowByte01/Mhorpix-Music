@@ -17,7 +17,7 @@
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Disclaimer**](#disclaimer)
+[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Credits**](#credits) · [**Disclaimer**](#disclaimer)
 
 </div>
 
@@ -83,8 +83,11 @@
 <h1><a id="download"></a>Download</h1>
 
 <a href="https://github.com/ShadowByte01/Mhorpix-Music/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/android/cozy.svg" alt="Download for Android" height="55"/></a>
+<a href="https://github.com/ShadowByte01/Mhorpix-Music/releases" target="_blank" rel="noopener noreferrer"><img src="https://cdn.jsdelivr.net/gh/JMcrafter26/badges@main/src/assets/supported/windows/cozy.svg" alt="Download for Windows" height="55"/></a>
 
-Grab the latest signed APK from the [Releases](https://github.com/ShadowByte01/Mhorpix-Music/releases) page. Sideloading requires enabling "Install unknown apps" for whichever app you download it with.
+Grab the latest signed Android APK or Windows desktop package (Installer, MSI, or Portable) from the [Releases](https://github.com/ShadowByte01/Mhorpix-Music/releases) page.
+
+For details on desktop features and packaging, see [DESKTOP.md](DESKTOP.md).
 
 </div>
 
@@ -112,6 +115,16 @@ Mhorpix is an independent, community-driven third-party audio player and client.
 * **Fair Use & API Usage:** This software is created solely for personal research, educational, and fair-use purposes. The user is entirely responsible for ensuring their usage aligns with their local copyright laws and YouTube Terms of Service.
 * **No Ad-Blocking Guarantee:** While Mhorpix focuses on providing a clean listening environment, it does not guarantee permanent bypasses or modifications to commercial third-party platform conditions.
 * **Copyleft:** Mhorpix is free software under the GPLv3. The license does not let anyone forbid others from selling or redistributing copies, but any distribution must come with the Corresponding Source under the same license.
+
+</div>
+
+---
+
+<div align="center">
+
+<h1><a id="credits"></a>Credits & Acknowledgements</h1>
+
+Special thanks and appreciation to [**BitChord**](https://github.com/kushagrasinghx/BitChord) by [kushagrasinghx](https://github.com/kushagrasinghx) for providing the foundational base, architecture, and inspiration for Mhorpix. All gratitude and thanks to God for the idea and foundation, with deepest appreciation and credit to BitChord and its contributors for their incredible work.
 
 </div>
 
