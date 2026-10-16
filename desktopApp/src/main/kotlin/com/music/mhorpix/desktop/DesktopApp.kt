@@ -223,8 +223,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
@@ -3018,6 +3020,20 @@ fun MhorpixDesktopApp() {
                             playPrevious()
                             true
                         }
+                        // Spacebar toggles play/pause, just like Spotify and
+                        // every other desktop music player. Only when no
+                        // modifier (Ctrl/Alt/Meta) is held and a song is
+                        // loaded, so typing in search/dialog fields is not
+                        // hijacked — Compose text fields consume Space on
+                        // KeyUp before it reaches here anyway.
+                        event.key == Key.Spacebar &&
+                            !event.isCtrlPressed &&
+                            !event.isAltPressed &&
+                            !event.isMetaPressed &&
+                            selectedSong != null -> {
+                            togglePlayPauseFromUser()
+                            true
+                        }
                         event.key == Key.DirectionLeft && event.isAltPressed && !overlays.nowPlaying -> {
                             goBack()
                             true
@@ -3063,13 +3079,6 @@ fun MhorpixDesktopApp() {
                         }
                         else -> false
                     }
-                }.onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyUp && event.key == Key.Spacebar) {
-                        if (selectedSong != null) {
-                            togglePlayPauseFromUser()
-                            true
-                        } else false
-                    } else false
                 },
                 topBar = { compact ->
                     DesktopTopBar(
@@ -6123,7 +6132,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("mhorpix.version") ?: "1.4" }
+    val version = remember { System.getProperty("mhorpix.version") ?: "1.5" }
     Text(
         text = "Mhorpix $version\nDeveloped by Abhinit\nA product of Xentara",
         style = MaterialTheme.typography.labelSmall,

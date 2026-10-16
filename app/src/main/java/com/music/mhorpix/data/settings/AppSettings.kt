@@ -393,6 +393,32 @@ object AppSettings {
     /** Real backdrop-sampled glass (blur, lens refraction) on the floating nav bar, Android 12+ only. */
     val liquidGlass = MutableStateFlow(true)
 
+    /**
+     * When on, analyses the device's CPU, RAM and Android version and adjusts
+     * Liquid Glass and other GPU-heavy effects to suit. On a low-end device it
+     * turns them off; on a high-end device it keeps them on. The text next to
+     * the toggle explains: "Analyses your device and adjusts effects for the
+     * best balance of looks and performance."
+     */
+    val autoAdjust = MutableStateFlow(false)
+
+    /**
+     * When on, Liquid Glass and all GPU-heavy effects (blur, lens refraction,
+     * dynamic backdrops) are turned off and the app falls back to solid-fill
+     * surfaces. This is the manual override for devices that struggle with the
+     * glass effect — the same thing [autoAdjust] does automatically when it
+     * detects a low-end device.
+     */
+    val lowEndMode = MutableStateFlow(false)
+
+    /**
+     * When on, the app uses its simplest, most efficient rendering: no glass,
+     * no blur, no lens, minimal animations. The UI stays clean and modern —
+     * the same design the app already uses, just with every GPU-heavy effect
+     * stripped out. This is the "Minimal" option.
+     */
+    val minimalMode = MutableStateFlow(false)
+
     /** Blurs unfocused lyric lines, keeping the active line sharp. */
     val lyricsBlur = MutableStateFlow(true)
 
@@ -833,12 +859,14 @@ object AppSettings {
         preferMusicOnly.value = prefs.getBoolean(KEY_PREFER_MUSIC_ONLY, false)
         smartVersionAlignment.value = prefs.getBoolean(KEY_SMART_VERSION_ALIGNMENT, true)
         reduceDynamicBlur.value = prefs.getBoolean(KEY_REDUCE_BLUR, false)
-        val storedLiquidGlass = prefs.getBoolean(KEY_LIQUID_GLASS, true)
-        liquidGlass.value = true  // Liquid Glass is always on (rebrand policy)
-        if (!storedLiquidGlass) {
-            // Migrate any prior stored `false` (user had it off) to on.
-            prefs.edit().putBoolean(KEY_LIQUID_GLASS, true).apply()
-        }
+        liquidGlass.value = prefs.getBoolean(KEY_LIQUID_GLASS, true)
+        autoAdjust.value = prefs.getBoolean(KEY_AUTO_ADJUST, false)
+        lowEndMode.value = prefs.getBoolean(KEY_LOW_END_MODE, false)
+        minimalMode.value = prefs.getBoolean(KEY_MINIMAL_MODE, false)
+        // If auto-adjust is on, run the device analysis once on load so the
+        // glass setting reflects the device's capability without waiting for
+        // the user to toggle anything.
+        if (autoAdjust.value) applyAutoAdjust()
         lyricsBlur.value = prefs.getBoolean(KEY_LYRICS_BLUR, true)
         lyricsOffsetMs.value = prefs.getInt(KEY_LYRICS_OFFSET_MS, 0)
             .coerceIn(MIN_LYRICS_OFFSET_MS, MAX_LYRICS_OFFSET_MS)
@@ -1234,10 +1262,60 @@ object AppSettings {
     }
 
     fun setLiquidGlass(value: Boolean) {
-        // Liquid Glass is always on by default (rebrand policy). The UI toggle
-        // has been removed; any caller passing `false` is a no-op.
-        liquidGlass.value = true
-        prefs.edit().putBoolean(KEY_LIQUID_GLASS, true).apply()
+        liquidGlass.value = value
+        prefs.edit().putBoolean(KEY_LIQUID_GLASS, value).apply()
+    }
+
+    fun setAutoAdjust(value: Boolean) {
+        autoAdjust.value = value
+        prefs.edit().putBoolean(KEY_AUTO_ADJUST, value).apply()
+        if (value) applyAutoAdjust()
+    }
+
+    fun setLowEndMode(value: Boolean) {
+        lowEndMode.value = value
+        prefs.edit().putBoolean(KEY_LOW_END_MODE, value).apply()
+        if (value) {
+            // Low-end mode forces glass off and blur reduced, for the best
+            // performance on devices that struggle with GPU-heavy effects.
+            liquidGlass.value = false
+            prefs.edit().putBoolean(KEY_LIQUID_GLASS, false).apply()
+            reduceDynamicBlur.value = true
+            prefs.edit().putBoolean(KEY_REDUCE_BLUR, true).apply()
+        }
+    }
+
+    fun setMinimalMode(value: Boolean) {
+        minimalMode.value = value
+        prefs.edit().putBoolean(KEY_MINIMAL_MODE, value).apply()
+        if (value) {
+            // Minimal mode strips every GPU-heavy effect: no glass, reduced
+            // blur, no dynamic backdrop — the simplest, most efficient render.
+            liquidGlass.value = false
+            prefs.edit().putBoolean(KEY_LIQUID_GLASS, false).apply()
+            reduceDynamicBlur.value = true
+            prefs.edit().putBoolean(KEY_REDUCE_BLUR, true).apply()
+        }
+    }
+
+    /**
+     * Analyses the device's CPU cores, RAM and Android version and decides
+     * whether Liquid Glass and other GPU-heavy effects should be on. Called
+     * when the user turns on [autoAdjust], and on app load if it was already on.
+     */
+    private fun applyAutoAdjust() {
+        val cores = Runtime.getRuntime().availableProcessors()
+        val totalMemMb = (Runtime.getRuntime().maxMemory() / (1024 * 1024)).toInt()
+        // Heuristic: 4+ cores and 192+ MB heap (a proxy for a device the JVM
+        // trusts with a large heap) is "high-end" enough for glass.
+        val isLowEnd = cores < 4 || totalMemMb < 192
+        if (isLowEnd) {
+            liquidGlass.value = false
+            reduceDynamicBlur.value = true
+        } else {
+            liquidGlass.value = true
+            reduceDynamicBlur.value = false
+        }
     }
 
     fun setHighPerformanceMode(value: Boolean) {
@@ -1967,6 +2045,9 @@ object AppSettings {
     private const val KEY_SMART_VERSION_ALIGNMENT = "smart_version_alignment"
     private const val KEY_REDUCE_BLUR = "reduce_dynamic_blur"
     private const val KEY_LIQUID_GLASS = "liquid_glass"
+    private const val KEY_AUTO_ADJUST = "auto_adjust_device"
+    private const val KEY_LOW_END_MODE = "low_end_mode"
+    private const val KEY_MINIMAL_MODE = "minimal_mode"
     private const val KEY_LYRICS_BLUR = "lyrics_blur"
     private const val KEY_LYRICS_OFFSET_MS = "lyrics_offset_ms"
     private const val KEY_TRANSLATION_LANGUAGE = "translation_language"

@@ -122,4 +122,20 @@ elseif(MSVC)
     endif()
     # The WinRT umbrella import library.
     target_link_libraries(mhorpix_smtc PRIVATE windowsapp gdi32)
+else()
+    # Neither MinGW-with-SMTC-headers nor MSVC — the SMTC library cannot be
+    # built on this toolchain. Log a clear status so the build output explains
+    # why Windows media controls (volume flyout card, media keys, Bluetooth
+    # buttons) will be missing from the resulting archive.
+    if(WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
+        message(WARNING
+            "mhorpix_smtc (Windows media controls) will NOT be built: "
+            "neither MSVC nor a MinGW with the WinRT ABI headers was detected. "
+            "Windows media keys, Bluetooth buttons, and the volume flyout card "
+            "will not work. To fix: build with MSVC (native Windows) or install "
+            "a MinGW distribution that ships systemmediatransportcontrolsinterop.h "
+            "and windows.media.h (e.g. mingw-w64 from MSYS2 with the 'winstorecompat' / "
+            "WinRT headers)."
+        )
+    endif()
 endif()

@@ -63,8 +63,10 @@ import androidx.compose.material.icons.rounded.MotionPhotosOff
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.Minimize
 import androidx.compose.material.icons.rounded.SignalCellularAlt
 import androidx.compose.material.icons.rounded.SmartDisplay
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Storage
 import androidx.compose.material.icons.rounded.SurroundSound
 import androidx.compose.material.icons.rounded.Tune
@@ -124,6 +126,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
+import com.music.mhorpix.ui.components.isGlassSupported
 import com.music.mhorpix.ui.components.languageDisplayNameRes
 import com.music.mhorpix.ui.components.MessageState
 import com.music.mhorpix.ui.components.SearchField
@@ -198,6 +201,11 @@ fun SettingsScreen(
     val nerdStats by AppSettings.showNerdStats.collectAsStateWithLifecycle()
     val reduceAnimation by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
     val reduceDynamicBlur by AppSettings.reduceDynamicBlur.collectAsStateWithLifecycle()
+    val liquidGlass by AppSettings.liquidGlass.collectAsStateWithLifecycle()
+    val autoAdjust by AppSettings.autoAdjust.collectAsStateWithLifecycle()
+    val lowEndMode by AppSettings.lowEndMode.collectAsStateWithLifecycle()
+    val minimalMode by AppSettings.minimalMode.collectAsStateWithLifecycle()
+    val liquidGlassSupported = isGlassSupported()
     val lyricsBlur by AppSettings.lyricsBlur.collectAsStateWithLifecycle()
     val animatedCanvas by AppSettings.animatedCanvas.collectAsStateWithLifecycle()
     val canvasOverCellular by AppSettings.canvasOverCellular.collectAsStateWithLifecycle()
@@ -784,6 +792,92 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setReduceDynamicBlur(!reduceDynamicBlur) },
+                )
+            }
+            // Liquid Glass — the translucent, frosted-glass nav bar. Only on
+            // Android 12+, and turned off by Low-end / Minimal modes.
+            row("liquid glass", "frosted", "blur") {
+                SettingsRow(
+                    icon = Icons.Rounded.BlurOn,
+                    title = "Liquid Glass",
+                    subtitle = if (!liquidGlassSupported) {
+                        "Requires Android 12 or later"
+                    } else {
+                        "Translucent frosted-glass navigation bar. Turn off if the app feels laggy."
+                    },
+                    trailing = {
+                        Switch(
+                            checked = liquidGlass && liquidGlassSupported,
+                            onCheckedChange = AppSettings::setLiquidGlass,
+                            enabled = liquidGlassSupported,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = {
+                        if (liquidGlassSupported) AppSettings.setLiquidGlass(!liquidGlass)
+                    },
+                )
+            }
+            // Auto-adjust — analyses the device and sets effects for the best
+            // balance of looks and performance. Removes lag on low-end devices.
+            row("auto adjust", "device", "performance") {
+                SettingsRow(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = "Auto-adjust for device",
+                    subtitle = "Analyses your device and adjusts effects for the best balance of looks and performance. Removes lag on low-end devices.",
+                    trailing = {
+                        Switch(
+                            checked = autoAdjust,
+                            onCheckedChange = AppSettings::setAutoAdjust,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setAutoAdjust(!autoAdjust) },
+                )
+            }
+            // Low-end mode — manual override to turn off all GPU-heavy effects.
+            row("low end", "performance", "gpu") {
+                SettingsRow(
+                    icon = Icons.Rounded.Speed,
+                    title = "Low-end mode",
+                    subtitle = "Turns off Liquid Glass and all GPU-heavy effects for the best performance. Use this if the app feels laggy.",
+                    trailing = {
+                        Switch(
+                            checked = lowEndMode,
+                            onCheckedChange = AppSettings::setLowEndMode,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setLowEndMode(!lowEndMode) },
+                )
+            }
+            // Minimal — the simplest, most efficient render. Clean, modern UI
+            // with every GPU-heavy effect stripped out.
+            row("minimal", "simple", "efficient") {
+                SettingsRow(
+                    icon = Icons.Rounded.Minimize,
+                    title = "Minimal",
+                    subtitle = "Everything minimal: no glass, no blur, no lens. Clean, modern, simple design with the lowest GPU usage.",
+                    trailing = {
+                        Switch(
+                            checked = minimalMode,
+                            onCheckedChange = AppSettings::setMinimalMode,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setMinimalMode(!minimalMode) },
                 )
             }
             // Left out where the player won't honour it: a window too wide for
