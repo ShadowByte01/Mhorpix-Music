@@ -754,8 +754,6 @@ fun NowPlayingScreen(
             onSeekFraction = onSeekFraction,
             onBack = {},
             onOpenMenu = onOpenMenu,
-            onOpenLyrics = {},
-            onOpenQueue = {},
             modifier = modifier,
         )
         return

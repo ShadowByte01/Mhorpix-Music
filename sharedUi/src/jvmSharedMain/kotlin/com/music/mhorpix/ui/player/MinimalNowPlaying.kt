@@ -2,11 +2,10 @@ package com.music.mhorpix.ui.player
 
 import com.music.mhorpix.playback.PlaybackPosition
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,14 +14,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Notes
-import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -30,15 +29,16 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -49,26 +49,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.music.mhorpix.data.model.Song
-import kotlinx.coroutines.launch
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 
-/**
- * The CompositionLocal that selects the minimal "Now Playing" layout. Provided
- * from the platform side (Android's [AppSettings.minimalMode], the desktop's own
- * appearance flag) — see [com.music.mhorpix.ui.AppUi] / MainActivity.
- */
+/** Selects the minimal "Now Playing" layout. Provided from the platform side. */
 val LocalMinimalMode = androidx.compose.runtime.staticCompositionLocalOf { false }
 
+/** The current playback volume, 0..1. Provided from the platform side. */
+val LocalPlayerVolume = androidx.compose.runtime.staticCompositionLocalOf { 1f }
+
+/** Called when the user drags the volume ring. */
+val LocalOnVolumeChange = androidx.compose.runtime.staticCompositionLocalOf<(Float) -> Unit> { {} }
+
+// ────────────────────────────────────────────────────────── colors ──
+
+private val Surface = Color(0xFFF0F0F0)
+private val TextPrimary = Color(0xFF1A1A1A)
+private val TextSecondary = Color(0xFF888888)
+private val RingTrack = Color(0xFFD0D0D0)
+private val RingProgress = Color(0xFF2A2A2A)
+private val ArtOuter = Color(0xFFE8E8E8)
+private val ArtInner = Color(0xFF1A1A1A)
+private val ButtonOutline = Color(0xFFD0D0D0)
+
+// ────────────────────────────────────────────────────────── main ──
+
 /**
- * A clean, minimal full-screen player — the "Minimal" mode layout.
+ * A clean, neumorphic minimal player — the "Minimal" mode layout.
  *
- * Dark, immersive background; left-aligned metadata; a circular album art ringed
- * by a 270-degree arc scrubber with a draggable white handle; circular transport
- * buttons; and a bottom row for lyrics and the queue. Every surface is a
- * solid fill — no glass, no blur, no lens — so this is the lightest render the
- * app can produce.
+ * Light off-white surface with soft shadows. The circular album art sits in
+ * the centre of a 210-degree volume ring with + and − buttons at top and
+ * bottom. The seek bar is a separate horizontal line below. Transport buttons
+ * (prev / pause / next) are at the very bottom. No glass, no blur, no lens —
+ * the lightest render the app can produce, and fast on every device.
  */
 @Composable
 fun MinimalNowPlaying(
@@ -82,27 +93,27 @@ fun MinimalNowPlaying(
     onSeekFraction: (Float) -> Unit,
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
-    onOpenLyrics: () -> Unit,
-    onOpenQueue: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scope = rememberCoroutineScope()
-    val fraction = remember(position.positionMs, durationMs) {
-        val pos = position.positionMs
+    val volume = LocalPlayerVolume.current
+    val onVolumeChange = LocalOnVolumeChange.current
+    val pos = position.positionMs
+    val fraction = remember(pos, durationMs) {
         if (durationMs > 0) (pos.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0A0A0A)),
+            .background(Surface),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .padding(top = 16.dp, bottom = 16.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // ── Top bar ──
             Row(
@@ -110,25 +121,19 @@ fun MinimalNowPlaying(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.White,
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .padding(4.dp),
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = TextPrimary)
+                    }
+                    Text("Back", color = TextPrimary, fontSize = 16.sp)
                 }
-                Text(
-                    text = "Back",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                )
-                Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onOpenMenu) {
-                    Icon(
-                        Icons.Rounded.Menu,
-                        contentDescription = "Menu",
-                        tint = Color.White,
-                    )
+                    Icon(Icons.Rounded.Menu, "Menu", tint = TextPrimary)
                 }
             }
 
@@ -138,58 +143,42 @@ fun MinimalNowPlaying(
                 horizontalAlignment = Alignment.Start,
             ) {
                 Text(
-                    text = song.albumName ?: "",
-                    color = Color(0xFFB3B3B3),
+                    song.artist,
+                    color = TextSecondary,
                     fontSize = 14.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = song.title,
-                    color = Color.White,
-                    fontSize = 32.sp,
+                    song.title,
+                    color = TextPrimary,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = song.artist,
-                    color = Color(0xFFB3B3B3),
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
 
-            // ── Circular album art with arc scrubber ──
-            CircularArtScrubber(
+            // ── Circular volume ring + album art ──
+            VolumeRingArt(
                 thumbnailUrl = song.thumbnailUrl,
-                fraction = fraction,
-                onSeekFraction = onSeekFraction,
+                volume = volume,
+                onVolumeChange = onVolumeChange,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .padding(vertical = 8.dp),
+                    .fillMaxWidth(0.72f)
+                    .aspectRatio(1f),
             )
 
-            // ── Time labels ──
-            Row(
+            // ── Timeline / seek bar ──
+            SeekBar(
+                fraction = fraction,
+                onSeekFraction = onSeekFraction,
+                currentMs = pos,
+                totalMs = durationMs,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = formatTime(position.positionMs),
-                    color = Color(0xFFB3B3B3),
-                    fontSize = 13.sp,
-                )
-                Text(
-                    text = "-" + formatTime((durationMs - position.positionMs).coerceAtLeast(0L)),
-                    color = Color(0xFFB3B3B3),
-                    fontSize = 13.sp,
-                )
-            }
+            )
 
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             // ── Transport buttons ──
             Row(
@@ -197,82 +186,49 @@ fun MinimalNowPlaying(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Previous — outline circle
-                TransportButton(
+                CircleButton(
                     icon = Icons.Rounded.SkipPrevious,
-                    contentDescription = "Previous",
+                    desc = "Previous",
                     isPrimary = false,
                     onClick = onPrevious,
                 )
-                // Play/Pause — solid circle
-                TransportButton(
+                CircleButton(
                     icon = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    desc = if (isPlaying) "Pause" else "Play",
                     isPrimary = true,
                     onClick = onPlayPause,
                 )
-                // Next — outline circle
-                TransportButton(
+                CircleButton(
                     icon = Icons.Rounded.SkipNext,
-                    contentDescription = "Next",
+                    desc = "Next",
                     isPrimary = false,
                     onClick = onNext,
                 )
-            }
-
-            Spacer(modifier = Modifier.size(8.dp))
-
-            // ── Bottom bar: lyrics + queue ──
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onOpenLyrics) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.Notes,
-                        contentDescription = "Lyrics",
-                        tint = Color.White,
-                    )
-                }
-                IconButton(onClick = onOpenQueue) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.QueueMusic,
-                        contentDescription = "Queue",
-                        tint = Color.White,
-                    )
-                }
             }
         }
     }
 }
 
-// ─────────────────────────────── circular art + arc scrubber ──
+// ────────────────────────────────────────────── volume ring + art ──
 
 /**
- * The circular album art ringed by a 270-degree arc scrubber. The arc has gaps
- * at top and bottom; a white "+" sits in the top gap and a draggable white dot
- * marks the current position. Dragging the dot (or anywhere on the ring) seeks.
+ * A 210-degree volume arc with + at the top and − at the bottom. The album
+ * art sits in the centre as a grey circle with a black inner circle. Dragging
+ * the arc (or the dot) changes the volume; tapping +/− nudges it by 10%.
  */
 @Composable
-private fun CircularArtScrubber(
+private fun VolumeRingArt(
     thumbnailUrl: String?,
-    fraction: Float,
-    onSeekFraction: (Float) -> Unit,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val scope = rememberCoroutineScope()
-    // The arc sweeps 270°, from 135° to 405° (i.e. clockwise from bottom-left
-    // around through left, top-gap, right, to bottom-gap).
-    val startAngle = 135f
-    val sweepAngle = 270f
-    // How far the handle has travelled along the arc, 0..1.
-    val handleAngleDeg = startAngle + sweepAngle * fraction
+    // The arc starts at 165° and sweeps 210° clockwise, so the gaps are at
+    // the top (≈ 12 o'clock, for the +) and bottom (≈ 6 o'clock, for the −).
+    val startAngle = 165f
+    val sweepAngle = 210f
 
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -284,134 +240,198 @@ private fun CircularArtScrubber(
                             val cy = size.height / 2f
                             val dx = change.position.x - cx
                             val dy = change.position.y - cy
-                            // Convert the touch angle to the arc's frame.
-                            var angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                            val dist = hypot(dx, dy)
+                            if (dist < 10f) return@detectDragGestures
+                            var angle = (atan2(dy, dx) * 180f / kotlin.math.PI.toFloat())
                             if (angle < 0) angle += 360f
-                            // Map the angle onto the 0..1 sweep.
                             val rel = ((angle - startAngle + 360f) % 360f) / sweepAngle
-                            if (rel in 0f..1f) {
-                                onSeekFraction(rel.coerceIn(0f, 1f))
-                            }
+                            if (rel in 0f..1f) onVolumeChange(rel.coerceIn(0f, 1f))
                         },
                     )
                 },
         ) {
-            val strokePx = 6.dp.toPx()
-            val diameter = minOf(size.width, size.height) - strokePx * 2
-            val topLeft = androidx.compose.ui.geometry.Offset(
-                (size.width - diameter) / 2f,
-                (size.height - diameter) / 2f,
-            )
-            val arcSize = androidx.compose.ui.geometry.Size(diameter, diameter)
-            // Background arc
+            val stroke = 4.dp.toPx()
+            val inset = stroke + 8.dp.toPx()
+            val diameter = minOf(size.width, size.height) - inset * 2
+            val topLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+            val arcSize = Size(diameter, diameter)
+            // Background track
             drawArc(
-                color = Color(0xFF333333),
+                color = RingTrack,
                 startAngle = startAngle,
                 sweepAngle = sweepAngle,
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
-                style = Stroke(width = strokePx),
+                style = Stroke(width = stroke),
             )
-            // Progress arc
+            // Volume progress
             drawArc(
-                color = Color.White,
+                color = RingProgress,
                 startAngle = startAngle,
-                sweepAngle = sweepAngle * fraction,
+                sweepAngle = sweepAngle * volume,
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
-                style = Stroke(width = strokePx),
+                style = Stroke(width = stroke),
             )
-            // Handle (white dot at the current position on the arc)
-            val rad = Math.toRadians(handleAngleDeg.toDouble()).toFloat()
-            val cx = size.width / 2f
-            val cy = size.height / 2f
+            // Volume dot
+            val handleAngle = startAngle + sweepAngle * volume
+            val rad = Math.toRadians(handleAngle.toDouble()).toFloat()
             val r = diameter / 2f
-            val hx = cx + r * cos(rad)
-            val hy = cy + r * sin(rad)
             drawCircle(
-                color = Color.White,
-                radius = strokePx * 1.3f,
-                center = androidx.compose.ui.geometry.Offset(hx, hy),
-            )
-            // Plus sign at the top gap (12 o'clock)
-            val plusY = cy - r - strokePx * 1.5f
-            val plusLen = 6.dp.toPx()
-            drawLine(
-                color = Color(0xFF888888),
-                start = androidx.compose.ui.geometry.Offset(cx - plusLen, plusY),
-                end = androidx.compose.ui.geometry.Offset(cx + plusLen, plusY),
-                strokeWidth = 2.dp.toPx(),
-            )
-            drawLine(
-                color = Color(0xFF888888),
-                start = androidx.compose.ui.geometry.Offset(cx, plusY - plusLen),
-                end = androidx.compose.ui.geometry.Offset(cx, plusY + plusLen),
-                strokeWidth = 2.dp.toPx(),
+                color = RingProgress,
+                radius = stroke * 1.4f,
+                center = Offset(size.width / 2f + r * cos(rad), size.height / 2f + r * sin(rad)),
             )
         }
-        // Album art (circular, inside the ring)
-        val artPad = 20.dp
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = "Album art",
-            contentScale = ContentScale.Crop,
+
+        // + button (top)
+        IconButton(
+            onClick = { onVolumeChange((volume + 0.1f).coerceAtMost(1f)) },
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            Text("+", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        }
+        // − button (bottom)
+        IconButton(
+            onClick = { onVolumeChange((volume - 0.1f).coerceAtLeast(0f)) },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            Text("−", color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        }
+
+        // Album art: grey outer circle + black inner circle + thumbnail
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(artPad)
-                .clip(CircleShape),
-        )
-    }
-}
-
-// ─────────────────────────────── transport button ──
-
-@Composable
-private fun TransportButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
-    isPrimary: Boolean,
-    onClick: () -> Unit,
-) {
-    val buttonSize = if (isPrimary) 64.dp else 52.dp
-    val borderColor = if (isPrimary) Color.White else Color(0xFF333333)
-    val bgColor = if (isPrimary) Color.White else Color.Transparent
-    val iconTint = if (isPrimary) Color.Black else Color.White
-    Box(
-        modifier = Modifier
-            .size(buttonSize)
-            .clip(CircleShape)
-            .background(bgColor),
-        contentAlignment = Alignment.Center,
-    ) {
-        // Outline ring drawn via Canvas for non-primary buttons
-        if (!isPrimary) {
-            Canvas(modifier = Modifier.size(buttonSize)) {
-                val stroke = 2.dp.toPx()
-                drawCircle(
-                    color = borderColor,
-                    radius = (this.size.minDimension - stroke) / 2f,
-                    style = Stroke(width = stroke),
+                .fillMaxSize(0.62f)
+                .clip(CircleShape)
+                .background(ArtOuter)
+                .shadow(8.dp, CircleShape, ambientColor = Color(0xFFCCCCCC)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(0.82f)
+                    .clip(CircleShape)
+                    .background(ArtInner),
+                contentAlignment = Alignment.Center,
+            ) {
+                AsyncImage(
+                    model = thumbnailUrl,
+                    contentDescription = "Album art",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
-        IconButton(onClick = onClick, modifier = Modifier.size(buttonSize)) {
-            Icon(
-                icon,
-                contentDescription = contentDescription,
-                tint = iconTint,
-                modifier = Modifier.size(if (isPrimary) 32.dp else 28.dp),
-            )
+    }
+}
+
+// ────────────────────────────────────────────────────────── seek bar ──
+
+@Composable
+private fun SeekBar(
+    fraction: Float,
+    onSeekFraction: (Float) -> Unit,
+    currentMs: Long,
+    totalMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(formatTime(currentMs), color = TextSecondary, fontSize = 12.sp)
+            Text(formatTime(totalMs), color = TextSecondary, fontSize = 12.sp)
+        }
+        Spacer(Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(24.dp)
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, _ ->
+                            change.consume()
+                            val w = size.width.toFloat()
+                            if (w > 0) onSeekFraction((change.position.x / w).coerceIn(0f, 1f))
+                        },
+                    )
+                },
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val trackY = size.height / 2f
+                drawLine(
+                    color = RingTrack,
+                    start = Offset(0f, trackY),
+                    end = Offset(size.width, trackY),
+                    strokeWidth = 3.dp.toPx(),
+                )
+                val progressX = size.width * fraction
+                drawLine(
+                    color = RingProgress,
+                    start = Offset(0f, trackY),
+                    end = Offset(progressX, trackY),
+                    strokeWidth = 3.dp.toPx(),
+                )
+                drawCircle(
+                    color = RingProgress,
+                    radius = 7.dp.toPx(),
+                    center = Offset(progressX, trackY),
+                )
+            }
         }
     }
 }
 
-// ─────────────────────────────── helpers ──
+// ────────────────────────────────────────────────── transport button ──
+
+@Composable
+private fun CircleButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    desc: String,
+    isPrimary: Boolean,
+    onClick: () -> Unit,
+) {
+    val sizeDp = if (isPrimary) 60.dp else 48.dp
+    val bgColor = if (isPrimary) Color(0xFF1A1A1A) else Surface
+    val iconTint = if (isPrimary) Color.White else TextPrimary
+    Box(
+        modifier = Modifier
+            .size(sizeDp)
+            .clip(CircleShape)
+            .background(bgColor)
+            .then(
+                if (isPrimary) Modifier.shadow(4.dp, CircleShape)
+                else Modifier.shadow(2.dp, CircleShape, ambientColor = Color(0xFFDDDDDD)),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (!isPrimary) {
+            Canvas(Modifier.size(sizeDp)) {
+                drawCircle(
+                    color = ButtonOutline,
+                    radius = (size.minDimension / 2f) - 1.dp.toPx(),
+                    style = Stroke(width = 1.5.dp.toPx()),
+                )
+            }
+        }
+        IconButton(onClick = onClick, modifier = Modifier.size(sizeDp)) {
+            Icon(icon, desc, tint = iconTint, modifier = Modifier.size(if (isPrimary) 28.dp else 22.dp))
+        }
+    }
+}
+
+// ────────────────────────────────────────────────────────── helpers ──
 
 private fun formatTime(ms: Long): String {
-    val totalSeconds = (ms / 1000).coerceAtLeast(0L)
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "%d:%02d".format(minutes, seconds)
+    val s = (ms / 1000).coerceAtLeast(0L)
+    return "%d:%02d".format(s / 60, s % 60)
 }
+
+private fun hypot(a: Float, b: Float): Float = kotlin.math.hypot(a, b)
+private fun atan2(a: Float, b: Float): Float = kotlin.math.atan2(a, b)
+private fun cos(a: Float): Float = kotlin.math.cos(a)
+private fun sin(a: Float): Float = kotlin.math.sin(a)

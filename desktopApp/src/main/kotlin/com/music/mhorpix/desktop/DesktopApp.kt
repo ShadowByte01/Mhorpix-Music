@@ -6132,7 +6132,7 @@ private fun DesktopSettingsScreen(
 /** The line at the foot of the settings sheet. */
 @Composable
 private fun DesktopSettingsFooter(onLicenses: () -> Unit) {
-    val version = remember { System.getProperty("mhorpix.version") ?: "1.6" }
+    val version = remember { System.getProperty("mhorpix.version") ?: "1.7" }
     Text(
         text = "Mhorpix $version\nDeveloped by Abhinit\nA product of Xentara",
         style = MaterialTheme.typography.labelSmall,
