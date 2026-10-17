@@ -263,6 +263,7 @@ import com.music.mhorpix.ui.icons.MhorpixIcons
 import androidx.media3.common.Player
 import com.music.mhorpix.data.YtMusicRepository
 import com.music.mhorpix.ui.player.NowPlayingScreen
+import com.music.mhorpix.ui.player.LocalMinimalMode
 import com.music.mhorpix.ui.player.PlayerSheetMotion
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -345,6 +346,7 @@ class MainActivity : AppCompatActivity() {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
             val highPerformance by AppSettings.highPerformanceMode.collectAsStateWithLifecycle()
             val liquidGlassEnabled by AppSettings.liquidGlass.collectAsStateWithLifecycle()
+            val minimalMode by AppSettings.minimalMode.collectAsStateWithLifecycle()
             val iosOverscrollFactory = rememberIosOverscrollFactory()
             val performanceRefreshRate by AppSettings.performanceRefreshRate.collectAsStateWithLifecycle()
             val composeView = LocalView.current
@@ -377,6 +379,7 @@ class MainActivity : AppCompatActivity() {
                 CompositionLocalProvider(
                     LocalOverscrollFactory provides iosOverscrollFactory,
                     LocalLiquidGlassEnabled provides liquidGlassEnabled,
+                    LocalMinimalMode provides minimalMode,
                     LocalAppBackdrop provides appBackdrop,
                 ) {
                 // The window's width, measured rather than asked for.

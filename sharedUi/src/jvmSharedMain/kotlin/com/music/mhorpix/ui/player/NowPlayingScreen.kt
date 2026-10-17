@@ -737,6 +737,29 @@ fun NowPlayingScreen(
     windowHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
+    // ── Minimal mode ──
+    // When Minimal mode is on, the full-screen player uses a clean, minimal
+    // layout: circular album art with an arc scrubber, left-aligned metadata,
+    // circular transport buttons. No glass, no blur, no lens — the lightest
+    // render the app can produce. Toggle it in Settings → Appearance → Minimal.
+    if (LocalMinimalMode.current) {
+        MinimalNowPlaying(
+            song = song,
+            isPlaying = isPlaying,
+            position = position,
+            durationMs = durationMs,
+            onPlayPause = onPlayPause,
+            onNext = onNext,
+            onPrevious = onPrevious,
+            onSeekFraction = onSeekFraction,
+            onBack = {},
+            onOpenMenu = onOpenMenu,
+            onOpenLyrics = {},
+            onOpenQueue = {},
+            modifier = modifier,
+        )
+        return
+    }
     val density = LocalDensity.current
     val haptics = rememberHaptics()
 
