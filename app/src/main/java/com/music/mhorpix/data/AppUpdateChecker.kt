@@ -111,9 +111,9 @@ object AppUpdateChecker {
 
                 val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching false
                 val htmlUrl = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@runCatching false
-                val apkUrl = apkAssetUrl(release)
-                val notes = release["body"]?.jsonPrimitive?.contentOrNull
                 val latest = tag.trimStart('v', 'V')
+                val apkUrl = apkAssetUrl(release, latest)
+                val notes = release["body"]?.jsonPrimitive?.contentOrNull
                 if (isNewer(latest, BuildConfig.VERSION_NAME)) {
                     _available.value = UpdateInfo(latest, htmlUrl, apkUrl, notes)
                     // Post the system-tray notification only once per new version
@@ -168,9 +168,10 @@ object AppUpdateChecker {
 
     /**
      * Finds the most suitable `.apk` download URL for this device from the release assets.
-     * Handles universal APKs, ABI splits (matching device supported ABIs), or single APK releases.
+     * Prioritizes the main release APK ("Mhorpix-<version>.apk" / "Mhorpix.apk"),
+     * followed by universal APKs, device-specific ABI matches, and finally any valid APK.
      */
-    private fun apkAssetUrl(release: JsonObject): String? = runCatching {
+    private fun apkAssetUrl(release: JsonObject, version: String): String? = runCatching {
         val apkAssets = release["assets"]?.jsonArray
             ?.mapNotNull { it as? JsonObject }
             ?.filter { asset ->
@@ -183,7 +184,19 @@ object AppUpdateChecker {
             return apkAssets.first()["browser_download_url"]?.jsonPrimitive?.contentOrNull
         }
 
-        // 1. Try to find a universal APK first
+        // 1. Highest priority: The main release APK, e.g. "Mhorpix-<version>.apk" or "Mhorpix.apk"
+        val mainApk = apkAssets.firstOrNull { asset ->
+            val name = asset["name"]?.jsonPrimitive?.contentOrNull ?: ""
+            name.equals("Mhorpix-$version.apk", ignoreCase = true) ||
+            name.equals("Mhorpix-v$version.apk", ignoreCase = true) ||
+            name.equals("Mhorpix.apk", ignoreCase = true) ||
+            name.equals("app-release.apk", ignoreCase = true)
+        }
+        if (mainApk != null) {
+            return mainApk["browser_download_url"]?.jsonPrimitive?.contentOrNull
+        }
+
+        // 2. Second priority: Explicit universal build if present
         val universal = apkAssets.firstOrNull {
             it["name"]?.jsonPrimitive?.contentOrNull?.contains("universal", ignoreCase = true) == true
         }
@@ -191,7 +204,7 @@ object AppUpdateChecker {
             return universal["browser_download_url"]?.jsonPrimitive?.contentOrNull
         }
 
-        // 2. Try to match the device's supported ABIs in priority order
+        // 3. Third priority: Try to match device's supported ABIs in priority order
         for (abi in Build.SUPPORTED_ABIS) {
             val matched = apkAssets.firstOrNull {
                 it["name"]?.jsonPrimitive?.contentOrNull?.contains(abi, ignoreCase = true) == true
@@ -201,7 +214,7 @@ object AppUpdateChecker {
             }
         }
 
-        // 3. Fallback to first available APK
+        // 4. Fallback: first available APK
         apkAssets.first()["browser_download_url"]?.jsonPrimitive?.contentOrNull
     }.getOrNull()
 

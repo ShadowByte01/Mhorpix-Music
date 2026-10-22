@@ -275,6 +275,7 @@ jobs:
           find app/build/outputs/apk/prod/release -name "*.apk" | while read -r apk; do
             filename=$(basename "$apk")
             if [[ "$filename" == *"universal"* ]]; then
+              cp "$apk" "dist/Mhorpix-$v.apk"
               cp "$apk" "dist/Mhorpix-$v-universal.apk"
             elif [[ "$filename" == *"arm64-v8a"* ]]; then
               cp "$apk" "dist/Mhorpix-$v-arm64-v8a.apk"
