@@ -124,7 +124,7 @@ Mhorpix is an independent, community-driven third-party audio player and client.
 
 <h1><a id="credits"></a>Credits & Acknowledgements</h1>
 
-Special thanks and appreciation to [**BitChord**](https://github.com/kushagrasinghx/BitChord) by [kushagrasinghx](https://github.com/kushagrasinghx) for providing the foundational base, architecture, and inspiration for Mhorpix. All gratitude and thanks to God for the idea and foundation, with deepest appreciation and credit to BitChord and its contributors for their incredible work.
+Special thanks and appreciation to [**BitChord**](https://github.com/kushagrasinghx/BitChord) by [kushagrasinghx](https://github.com/kushagrasinghx) for providing the foundational base, architecture, and inspiration for Mhorpix. All gratitude and thanks with deepest appreciation and credit to BitChord and its contributors for their incredible work.
 
 </div>
 
