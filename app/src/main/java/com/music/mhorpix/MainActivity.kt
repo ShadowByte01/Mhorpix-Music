@@ -147,7 +147,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.music.mhorpix.data.model.durationMillis
 import com.music.mhorpix.data.scrobbling.LastFM
-import com.music.mhorpix.BuildConfig
 import com.music.mhorpix.data.settings.AppSettings
 import com.music.mhorpix.data.settings.LibrarySort
 import com.music.mhorpix.data.settings.ThemeMode
@@ -247,6 +246,15 @@ import com.music.mhorpix.ui.components.MiniPlayer
 import com.music.mhorpix.ui.components.QueueActionNotice
 import com.music.mhorpix.ui.components.QueueActionNoticeHost
 import com.music.mhorpix.ui.components.TopBarAccountButton
+import com.music.mhorpix.ui.components.LocalY2kMode
+import com.music.mhorpix.ui.components.FrutigerAeroBackground
+import com.music.mhorpix.ui.components.Y2kPalette
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Brush
+import kotlin.math.sin
+import com.music.mhorpix.ui.components.Y2kButton
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Groups
 import com.music.mhorpix.ui.screens.SegmentedControl
 import com.music.mhorpix.ui.components.SearchField
@@ -357,16 +365,19 @@ class MainActivity : AppCompatActivity() {
             val highPerformance by AppSettings.highPerformanceMode.collectAsStateWithLifecycle()
             val liquidGlassEnabled by AppSettings.liquidGlass.collectAsStateWithLifecycle()
             val minimalMode by AppSettings.minimalMode.collectAsStateWithLifecycle()
+            val y2kMode by AppSettings.y2kMode.collectAsStateWithLifecycle()
             val iosOverscrollFactory = rememberIosOverscrollFactory()
             val performanceRefreshRate by AppSettings.performanceRefreshRate.collectAsStateWithLifecycle()
             val composeView = LocalView.current
             LaunchedEffect(highPerformance, performanceRefreshRate, composeView) {
                 applyPerformanceMode(highPerformance, performanceRefreshRate, composeView)
             }
-            val darkTheme = when (theme) {
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
-                ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
+            val darkTheme = when {
+                y2kMode -> false // Y2K is always light/silver
+                theme == ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                theme == ThemeMode.LIGHT -> false
+                theme == ThemeMode.DARK -> true
+                else -> isSystemInDarkTheme()
             }
             MhorpixTheme(darkTheme = darkTheme) {
                 // The glass surfaces sample this layer, and a layer records only
@@ -379,9 +390,56 @@ class MainActivity : AppCompatActivity() {
                 // the floor the pages have always been drawn against, so it is
                 // laid down here too and the recording is opaque like the screen.
                 val windowBackground = MaterialTheme.colorScheme.background
-                val paintBackdrop: ContentDrawScope.() -> Unit = remember(windowBackground) {
+                val paintBackdrop: ContentDrawScope.() -> Unit = remember(windowBackground, y2kMode) {
                     {
-                        drawRect(windowBackground)
+                        if (y2kMode) {
+                            // Frutiger Aero: aurora gradient + animated water droplets
+                            drawRect(brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Y2kPalette.AeroMint,
+                                    Y2kPalette.AeroCyan,
+                                    Y2kPalette.AeroSky,
+                                    Y2kPalette.AeroMint.copy(alpha = 0.8f),
+                                ),
+                            ))
+                            // Animated water droplets (driven by system clock)
+                            val drift = (System.currentTimeMillis() % 8000L) / 8000f
+                            val w = size.width
+                            val h = size.height
+                            val drops = listOf(
+                                Triple(0.1f, 0.15f, 30f), Triple(0.5f, 0.3f, 45f),
+                                Triple(0.8f, 0.1f, 25f), Triple(0.3f, 0.5f, 35f),
+                                Triple(0.7f, 0.6f, 40f), Triple(0.15f, 0.7f, 28f),
+                                Triple(0.55f, 0.8f, 32f), Triple(0.9f, 0.45f, 38f),
+                                Triple(0.25f, 0.25f, 22f), Triple(0.65f, 0.15f, 26f),
+                            )
+                            drops.forEachIndexed { i, (dx, dy, r) ->
+                                val t = (drift + i * 0.13f) % 1f
+                                val amp = 12f
+                                val x = dx * w + sin(t * 6.28f) * amp
+                                val y = dy * h + sin((t + i * 0.1f) * 6.28f) * amp * 0.5f
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Color.White.copy(alpha = 0.7f),
+                                            Color.White.copy(alpha = 0.2f),
+                                            Color.Transparent,
+                                        ),
+                                        center = Offset(x, y),
+                                        radius = r,
+                                    ),
+                                    center = Offset(x, y),
+                                    radius = r,
+                                )
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.6f),
+                                    radius = r * 0.15f,
+                                    center = Offset(x - r * 0.25f, y - r * 0.25f),
+                                )
+                            }
+                        } else {
+                            drawRect(windowBackground)
+                        }
                         drawContent()
                     }
                 }
@@ -390,6 +448,7 @@ class MainActivity : AppCompatActivity() {
                     LocalOverscrollFactory provides iosOverscrollFactory,
                     LocalLiquidGlassEnabled provides liquidGlassEnabled,
                     LocalMinimalMode provides minimalMode,
+                    LocalY2kMode provides y2kMode,
                     LocalAppBackdrop provides appBackdrop,
                 ) {
                 // The window's width, measured rather than asked for.
@@ -520,6 +579,7 @@ private fun MhorpixApp(
     // takes part in the docking asks for [activeDock] / this, never for the
     // dock or the motion directly.
     val reducePlayerMotion by AppSettings.reduceAnimation.collectAsStateWithLifecycle()
+    val y2kMode by AppSettings.y2kMode.collectAsStateWithLifecycle()
     val activeDock = playerDock.takeIf { !reducePlayerMotion }
     playerSheetMotion.flingVelocity = with(LocalDensity.current) { PLAYER_PULL_FLING_VELOCITY.toPx() }
     // How the app takes the player down, whatever for: a back press, or a page
@@ -3771,7 +3831,16 @@ private fun MhorpixApp(
                             TopBarDownloadButton(onClick = { showDownloadManager = true })
                             // P2P Listen Together — two-people icon
                             IconButton(onClick = { settingsSubScreen = "p2p_listen_together" }) {
-                                Icon(Icons.Rounded.Groups, contentDescription = "P2P Listen Together")
+                                Icon(Icons.Rounded.Groups, contentDescription = "P2P Listen Together", tint = MaterialTheme.colorScheme.onSurface)
+                            }
+                            // Y2K mode toggle — sparkles icon. When on, the whole app
+                            // transforms into a nostalgic early-2000s chrome + Aqua UI.
+                            IconButton(onClick = { AppSettings.setY2kMode(!y2kMode) }) {
+                                Icon(
+                                    Icons.Rounded.AutoAwesome,
+                                    contentDescription = "Y2K Mode",
+                                    tint = if (y2kMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                )
                             }
                             TopBarAccountButton(
                                 account = account,

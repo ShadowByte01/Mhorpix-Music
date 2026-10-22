@@ -419,6 +419,10 @@ object AppSettings {
      */
     val minimalMode = MutableStateFlow(false)
 
+    /** When on, the whole app transforms into a nostalgic Y2K / early-2000s UI:
+     *  silver-chrome gradients, glossy Aqua buttons, bubbly shapes, and click sounds. */
+    val y2kMode = MutableStateFlow(false)
+
     /** Blurs unfocused lyric lines, keeping the active line sharp. */
     val lyricsBlur = MutableStateFlow(true)
 
@@ -863,6 +867,7 @@ object AppSettings {
         autoAdjust.value = prefs.getBoolean(KEY_AUTO_ADJUST, false)
         lowEndMode.value = prefs.getBoolean(KEY_LOW_END_MODE, false)
         minimalMode.value = prefs.getBoolean(KEY_MINIMAL_MODE, false)
+        y2kMode.value = prefs.getBoolean(KEY_Y2K_MODE, false)
         // If auto-adjust is on, run the device analysis once on load so the
         // glass setting reflects the device's capability without waiting for
         // the user to toggle anything.
@@ -1289,13 +1294,16 @@ object AppSettings {
         minimalMode.value = value
         prefs.edit().putBoolean(KEY_MINIMAL_MODE, value).apply()
         if (value) {
-            // Minimal mode strips every GPU-heavy effect: no glass, reduced
-            // blur, no dynamic backdrop — the simplest, most efficient render.
             liquidGlass.value = false
             prefs.edit().putBoolean(KEY_LIQUID_GLASS, false).apply()
             reduceDynamicBlur.value = true
             prefs.edit().putBoolean(KEY_REDUCE_BLUR, true).apply()
         }
+    }
+
+    fun setY2kMode(value: Boolean) {
+        y2kMode.value = value
+        prefs.edit().putBoolean(KEY_Y2K_MODE, value).apply()
     }
 
     /**
@@ -2048,6 +2056,7 @@ object AppSettings {
     private const val KEY_AUTO_ADJUST = "auto_adjust_device"
     private const val KEY_LOW_END_MODE = "low_end_mode"
     private const val KEY_MINIMAL_MODE = "minimal_mode"
+    private const val KEY_Y2K_MODE = "y2k_mode"
     private const val KEY_LYRICS_BLUR = "lyrics_blur"
     private const val KEY_LYRICS_OFFSET_MS = "lyrics_offset_ms"
     private const val KEY_TRANSLATION_LANGUAGE = "translation_language"

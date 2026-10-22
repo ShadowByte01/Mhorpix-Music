@@ -98,40 +98,48 @@ object P2pController {
 
     // ─────────────────────────── host ───────────────────────────────────
 
-    fun createRoom(context: Context, initialTrack: P2pTrack? = null): Result<String> {
-        if (_mode.value != Mode.IDLE) return Result.failure(IllegalStateException("Already in a session"))
-        val me = identity ?: P2pDeviceIdentity.get(context).also { identity = it }
-        val code = generateCode()
-        val port = (49152..65535).random()
-        return runCatching {
-            serverSocket = ServerSocket(port)
-            nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-            val service = NsdServiceInfo().apply {
-                serviceName = "mhorpix-$code"
-                serviceType = "_mhorpix._tcp."
-                setPort(port)
-            }
-            nsdService = service
-            runCatching { nsdManager?.registerService(service, NsdManager.PROTOCOL_DNS_SD, registrationListener) }
+    /** Creates a room asynchronously — the server socket + NSD registration
+     *  run on Dispatchers.IO so the UI thread is never blocked. */
+    fun createRoom(context: Context, initialTrack: P2pTrack? = null) {
+        if (_mode.value != Mode.IDLE) return
+        scope.launch {
+            val me = identity ?: P2pDeviceIdentity.get(context).also { identity = it }
+            val code = generateCode()
             _mode.value = Mode.HOST
-            _connection.value = Connection.LIVE
-            val room = P2pRoom(
-                code = code,
-                hostName = me.name,
-                hostDeviceId = me.id,
-                members = listOf(P2pMember(me.id, me.name, isHost = true)),
-                queue = initialTrack?.let { listOf(it) } ?: emptyList(),
-                currentIndex = if (initialTrack != null) 0 else -1,
-                isPlaying = false,
-                positionMs = 0,
-                anchorMs = System.currentTimeMillis(),
-                autoplay = true,
-            )
-            hostRoom = room
-            _room.value = room
-            scope.launch { acceptLoop() }
-            Result.success(code)
-        }.getOrElse { Result.failure(it) }
+            _connection.value = Connection.CONNECTING
+            runCatching {
+                // Port 0 = let the OS pick a free port (instant, no collision risk)
+                serverSocket = ServerSocket(0)
+                val port = serverSocket!!.localPort
+                nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
+                val service = NsdServiceInfo().apply {
+                    serviceName = "mhorpix-$code"
+                    serviceType = "_mhorpix._tcp."
+                    setPort(port)
+                }
+                nsdService = service
+                runCatching { nsdManager?.registerService(service, NsdManager.PROTOCOL_DNS_SD, registrationListener) }
+                val room = P2pRoom(
+                    code = code,
+                    hostName = me.name,
+                    hostDeviceId = me.id,
+                    members = listOf(P2pMember(me.id, me.name, isHost = true)),
+                    queue = initialTrack?.let { listOf(it) } ?: emptyList(),
+                    currentIndex = if (initialTrack != null) 0 else -1,
+                    isPlaying = false,
+                    positionMs = 0,
+                    anchorMs = System.currentTimeMillis(),
+                    autoplay = true,
+                )
+                hostRoom = room
+                _room.value = room
+                _connection.value = Connection.LIVE
+                scope.launch { acceptLoop() }
+            }.onFailure {
+                _mode.value = Mode.IDLE
+                _connection.value = Connection.DISCONNECTED
+            }
+        }
     }
 
     private fun acceptLoop() {

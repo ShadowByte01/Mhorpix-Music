@@ -1,4 +1,4 @@
-﻿package com.music.mhorpix.data
+package com.music.mhorpix.data
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -60,15 +60,17 @@ object UpdateNotifications {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
+            val emojiRegex = Regex("[\\p{So}\\p{Cn}\\u2600-\\u27BF\\u2B50\\u2B55\\uFE00-\\uFE0F\\u200D\\u20E3]|[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]")
+            val title = context.getString(R.string.update_notification_title).replace(emojiRegex, "").trim()
+            val body = context.getString(R.string.update_notification_body, version).replace(emojiRegex, "").trim()
+
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_notification_logo)
-                .setContentTitle(context.getString(R.string.update_notification_title))
-                .setContentText(
-                    context.getString(R.string.update_notification_body, version),
-                )
+                .setContentTitle(title)
+                .setContentText(body)
                 .setStyle(
                     NotificationCompat.BigTextStyle()
-                        .bigText(context.getString(R.string.update_notification_body, version)),
+                        .bigText(body),
                 )
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)

@@ -208,6 +208,7 @@ fun SettingsScreen(
     val autoAdjust by AppSettings.autoAdjust.collectAsStateWithLifecycle()
     val lowEndMode by AppSettings.lowEndMode.collectAsStateWithLifecycle()
     val minimalMode by AppSettings.minimalMode.collectAsStateWithLifecycle()
+    val y2kMode by AppSettings.y2kMode.collectAsStateWithLifecycle()
     val liquidGlassSupported = isGlassSupported()
     val lyricsBlur by AppSettings.lyricsBlur.collectAsStateWithLifecycle()
     val animatedCanvas by AppSettings.animatedCanvas.collectAsStateWithLifecycle()
@@ -881,6 +882,25 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setMinimalMode(!minimalMode) },
+                )
+            }
+            // Y2K — nostalgic early-2000s chrome + Aqua UI transformation.
+            row("y2k", "nostalgic", "chrome") {
+                SettingsRow(
+                    icon = Icons.Rounded.AutoAwesome,
+                    title = "Y2K Mode",
+                    subtitle = "Transform the whole app into a nostalgic early-2000s UI: silver chrome gradients, glossy Aqua buttons, bubbly shapes, and click sounds.",
+                    trailing = {
+                        Switch(
+                            checked = y2kMode,
+                            onCheckedChange = AppSettings::setY2kMode,
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                checkedBorderColor = MaterialTheme.colorScheme.primary,
+                            ),
+                        )
+                    },
+                    onClick = { AppSettings.setY2kMode(!y2kMode) },
                 )
             }
             // Left out where the player won't honour it: a window too wide for

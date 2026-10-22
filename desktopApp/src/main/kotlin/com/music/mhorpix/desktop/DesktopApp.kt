@@ -513,24 +513,35 @@ fun MhorpixDesktopApp() {
     var availableUpdate by remember { mutableStateOf<DesktopUpdateChecker.UpdateInfo?>(null) }
     LaunchedEffect(Unit) { availableUpdate = DesktopUpdateChecker.check() }
     availableUpdate?.let { update ->
+        val emojiRegex = remember {
+            Regex("[\\p{So}\\p{Cn}\\u2600-\\u27BF\\u2B50\\u2B55\\uFE00-\\uFE0F\\u200D\\u20E3]|[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]")
+        }
+        val cleanNotes = remember(update.notes) {
+            update.notes?.replace(emojiRegex, "")
+                ?.lines()
+                ?.joinToString("\n") { it.trimEnd() }
+                ?.replace(Regex(" {2,}"), " ")
+                ?.trim()
+        }
+        val dialogTitle = DesktopStrings["d_update_available", "Update available"].replace(emojiRegex, "").trim()
         AlertDialog(
             onDismissRequest = { availableUpdate = null },
-            title = { Text(DesktopStrings["d_update_available", "Update available"]) },
+            title = { Text(dialogTitle) },
             text = {
                 Text(
                     "Mhorpix ${update.version} is out — you have ${DesktopUpdateChecker.currentVersion}." +
-                        (update.notes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
+                        (cleanNotes?.takeIf { it.isNotBlank() }?.let { "\n\n${it.take(600)}" } ?: ""),
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     DesktopExternalLinks.open(update.downloadUrl ?: update.releaseUrl)
                     availableUpdate = null
-                }) { Text(DesktopStrings["d_download", "Download"]) }
+                }) { Text(DesktopStrings["d_download", "Download"].replace(emojiRegex, "").trim()) }
             },
             dismissButton = {
                 TextButton(onClick = { availableUpdate = null }) {
-                    Text(DesktopStrings["d_later", "Later"])
+                    Text(DesktopStrings["d_later", "Later"].replace(emojiRegex, "").trim())
                 }
             },
         )
