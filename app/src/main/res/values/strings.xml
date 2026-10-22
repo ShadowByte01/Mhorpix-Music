@@ -150,6 +150,14 @@
     <string name="try_again">Try Again</string>
     <string name="open_releases_page">Open Releases Page</string>
     <string name="whats_new">What’s new</string>
+    <!-- Update notification channel (system shade) -->
+    <string name="update_channel_name">Updates</string>
+    <string name="update_channel_description">Notifications when a new version of Mhorpix is released</string>
+    <!-- System-tray notification shown when a new release is detected -->
+    <string name="update_notification_title">A new update is available</string>
+    <string name="update_notification_body">Mhorpix v%1$s is out. Tap to update inside the app.</string>
+    <!-- Update dialog: permanent decline option -->
+    <string name="dont_ask_again">Don\'t Ask Again</string>
     <string name="log_copied">Log copied · %1$d lines</string>
     <string name="sign_in_youtube_music">Sign in to YouTube Music</string>
     <string name="choose_a_channel">Choose a channel</string>

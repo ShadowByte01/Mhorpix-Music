@@ -2,6 +2,7 @@ package com.music.mhorpix.data
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -22,13 +25,21 @@ import java.io.File
 /**
  * Mhorpix ships as a sideloaded APK off GitHub Releases rather than through
  * a store, so there's nothing to push an update notice on its own — this
- * polls the repo's "latest release" once per launch and compares its tag
+ * polls the repo's releases once per launch and compares the latest tag
  * against the running build.
  *
  * The update itself is also handled here: the release's `.apk` asset is
  * downloaded into the app's cache and handed to the system package installer,
  * so the whole round trip stays inside the app instead of bouncing out to a
  * browser.
+ *
+ * Two extra pieces of state are persisted in SharedPreferences:
+ *  - [KEY_NOTIFIED_VERSION]: the last version for which the system-tray
+ *    notification was posted. The notification fires only once per new
+ *    version so the shade doesn't accumulate duplicates across launches.
+ *  - [KEY_DONT_ASK_VERSION]: the version the user permanently declined via
+ *    "Don't Ask Again". The in-app popup is suppressed for that version on
+ *    every subsequent launch.
  */
 object AppUpdateChecker {
 
@@ -41,9 +52,19 @@ object AppUpdateChecker {
     )
 
     private const val CACHE_SUBDIR = "updates"
+    private const val PREFS_NAME = "app_update_checker"
+    private const val KEY_NOTIFIED_VERSION = "notified_version"
+    private const val KEY_DONT_ASK_VERSION = "dont_ask_version"
 
-    private const val LATEST_RELEASE_URL =
-        "https://api.github.com/repos/kushagrasinghx/Mhorpix/releases/latest"
+    /**
+     * Primary and fallback repositories to check for releases.
+     * Both public GitHub endpoints are polled with proper headers.
+     */
+    private val RELEASE_URLS = listOf(
+        "https://api.github.com/repos/ShadowByte01/Mhorpix/releases",
+        "https://api.github.com/repos/ShadowByte01/Mhorpix-Music/releases",
+        "https://api.github.com/repos/ShadowByte01/Mhorpix/releases/latest",
+    )
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -65,23 +86,75 @@ object AppUpdateChecker {
     @Volatile
     private var downloadCancelled = false
 
-    suspend fun check() = withContext(Dispatchers.IO) {
-        runCatching {
-            val request = Request.Builder().url(LATEST_RELEASE_URL).build()
-            val body = Http.client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) null else response.body?.string()
-            } ?: return@runCatching
-            val release = json.parseToJsonElement(body) as? JsonObject ?: return@runCatching
-            val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching
-            val url = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@runCatching
-            val apkUrl = apkAssetUrl(release)
-            val notes = release["body"]?.jsonPrimitive?.contentOrNull
-            val latest = tag.removePrefix("v")
-            if (isNewer(latest, BuildConfig.VERSION_NAME)) {
-                _available.value = UpdateInfo(latest, url, apkUrl, notes)
+    suspend fun check(context: Context) = withContext(Dispatchers.IO) {
+        for (url in RELEASE_URLS) {
+            val handled = runCatching {
+                val request = Request.Builder()
+                    .url(url)
+                    .header("Accept", "application/vnd.github+json")
+                    .header("User-Agent", "Mhorpix-App")
+                    .build()
+                val body = Http.client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) null else response.body?.string()
+                } ?: return@runCatching false
+
+                val parsedElement = json.parseToJsonElement(body)
+                val release = when (parsedElement) {
+                    is JsonArray -> parsedElement
+                        .mapNotNull { it as? JsonObject }
+                        .firstOrNull { it["draft"]?.jsonPrimitive?.booleanOrNull != true }
+                    is JsonObject -> parsedElement.takeUnless {
+                        it["draft"]?.jsonPrimitive?.booleanOrNull == true
+                    }
+                    else -> null
+                } ?: return@runCatching false
+
+                val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching false
+                val htmlUrl = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@runCatching false
+                val apkUrl = apkAssetUrl(release)
+                val notes = release["body"]?.jsonPrimitive?.contentOrNull
+                val latest = tag.trimStart('v', 'V')
+                if (isNewer(latest, BuildConfig.VERSION_NAME)) {
+                    _available.value = UpdateInfo(latest, htmlUrl, apkUrl, notes)
+                    // Post the system-tray notification only once per new version
+                    // so the shade doesn't fill up with duplicates across launches.
+                    val prefs = prefs(context)
+                    if (prefs.getString(KEY_NOTIFIED_VERSION, null) != latest) {
+                        UpdateNotifications.post(context, latest)
+                        prefs.edit().putString(KEY_NOTIFIED_VERSION, latest).apply()
+                    }
+                }
+                true
+            }.getOrDefault(false)
+
+            if (handled && _available.value != null) {
+                break
             }
         }
     }
+
+    /**
+     * Whether the in-app update dialog should be shown for [version].
+     *
+     * Returns false only if the user has previously tapped "Don't Ask Again"
+     * for this exact version. A plain "Later" dismiss does not set this, so
+     * the dialog comes back on the next launch.
+     */
+    fun shouldShowDialog(context: Context, version: String): Boolean =
+        prefs(context).getString(KEY_DONT_ASK_VERSION, null) != version
+
+    /**
+     * Records that the user has chosen not to be reminded about [version] again.
+     *
+     * Called when the user taps "Don't Ask Again" in the update dialog.
+     * A newer release will reset this because its version string is different.
+     */
+    fun dontAskAgain(context: Context, version: String) {
+        prefs(context).edit().putString(KEY_DONT_ASK_VERSION, version).apply()
+    }
+
+    private fun prefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     /**
      * Wipes any APK left over from a previous run. Called once at cold start
@@ -94,21 +167,42 @@ object AppUpdateChecker {
     }
 
     /**
-     * The release usually carries exactly one `.apk`; take its direct download
-     * URL. A release without one (source-only draft, renamed asset) leaves
-     * [UpdateInfo.apkUrl] null and the UI falls back to opening the releases
-     * page as before.
+     * Finds the most suitable `.apk` download URL for this device from the release assets.
+     * Handles universal APKs, ABI splits (matching device supported ABIs), or single APK releases.
      */
     private fun apkAssetUrl(release: JsonObject): String? = runCatching {
-        release["assets"]?.jsonArray
+        val apkAssets = release["assets"]?.jsonArray
             ?.mapNotNull { it as? JsonObject }
-            ?.firstOrNull { asset ->
+            ?.filter { asset ->
                 asset["name"]?.jsonPrimitive?.contentOrNull?.endsWith(".apk", ignoreCase = true) == true &&
                     asset["state"]?.jsonPrimitive?.contentOrNull == "uploaded"
+            } ?: emptyList()
+
+        if (apkAssets.isEmpty()) return null
+        if (apkAssets.size == 1) {
+            return apkAssets.first()["browser_download_url"]?.jsonPrimitive?.contentOrNull
+        }
+
+        // 1. Try to find a universal APK first
+        val universal = apkAssets.firstOrNull {
+            it["name"]?.jsonPrimitive?.contentOrNull?.contains("universal", ignoreCase = true) == true
+        }
+        if (universal != null) {
+            return universal["browser_download_url"]?.jsonPrimitive?.contentOrNull
+        }
+
+        // 2. Try to match the device's supported ABIs in priority order
+        for (abi in Build.SUPPORTED_ABIS) {
+            val matched = apkAssets.firstOrNull {
+                it["name"]?.jsonPrimitive?.contentOrNull?.contains(abi, ignoreCase = true) == true
             }
-            ?.get("browser_download_url")
-            ?.jsonPrimitive
-            ?.contentOrNull
+            if (matched != null) {
+                return matched["browser_download_url"]?.jsonPrimitive?.contentOrNull
+            }
+        }
+
+        // 3. Fallback to first available APK
+        apkAssets.first()["browser_download_url"]?.jsonPrimitive?.contentOrNull
     }.getOrNull()
 
     /**

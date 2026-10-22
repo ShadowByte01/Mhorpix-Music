@@ -121,6 +121,8 @@ import com.music.mhorpix.auth.DiscordLoginScreen
 import com.music.mhorpix.auth.WebSessionMode
 import com.music.mhorpix.auth.YtMusicLoginScreen
 import com.music.mhorpix.data.AppUpdateChecker
+import com.music.mhorpix.data.UpdateDeepLink
+import com.music.mhorpix.data.UpdateNotifications
 import com.music.mhorpix.data.LocalMediaRepository
 import com.music.mhorpix.data.listentogether.JamInviteLink
 import com.music.mhorpix.data.listentogether.ListenTogether
@@ -340,6 +342,7 @@ class MainActivity : AppCompatActivity() {
         // the request already standing by the time MhorpixApp first reads it.
         PlayerDeepLink.consume(intent)
         JamInviteLink.consume(intent)
+        UpdateDeepLink.consume(intent)
         // Likewise for a link tapped or shared from another app — see [MusicLink].
         MusicLink.consume(intent)
         setContent {
@@ -438,6 +441,7 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         PlayerDeepLink.consume(intent)
         JamInviteLink.consume(intent)
+        UpdateDeepLink.consume(intent)
         MusicLink.consume(intent)
     }
 }
@@ -686,12 +690,15 @@ private fun MhorpixApp(
     val homeRecentlyPlayedLoading by viewModel.homeRecentlyPlayedLoading.collectAsStateWithLifecycle()
 
     // The top bar's icon is the quiet, always-there nudge; this is the
-    // once-per-launch popup version of the same news. `updateDialogShown`
-    // rides out configuration changes on rememberSaveable so a rotation
-    // doesn't bring it back — only a fresh launch does.
-    var updateDialogShown by rememberSaveable { mutableStateOf(false) }
+    // popup version of the same news shown on every launch until the user
+    // either installs the update or taps "Don't Ask Again".  
+    // `updateDialogShownThisLaunch` rides out configuration changes on
+    // rememberSaveable so a rotation doesn't bring it back.
+    var updateDialogShownThisLaunch by rememberSaveable { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     val updateAvailable by viewModel.updateAvailable.collectAsStateWithLifecycle()
+    // Tap on the system-tray notification — same relay pattern as PlayerDeepLink.
+    val openUpdateRequested by UpdateDeepLink.pending.collectAsStateWithLifecycle()
 
     /**
      * The single gate both surfaces read, so the icon can't announce the update
@@ -700,10 +707,23 @@ private fun MhorpixApp(
      */
     val updateNotice = updateAvailable
 
+    // Show the dialog automatically on first notice this launch, unless
+    // the user has permanently declined via "Don't Ask Again".
     LaunchedEffect(updateNotice) {
-        if (updateNotice != null && !updateDialogShown) {
-            updateDialogShown = true
+        val info = updateNotice ?: return@LaunchedEffect
+        if (!updateDialogShownThisLaunch &&
+            AppUpdateChecker.shouldShowDialog(context, info.version)
+        ) {
+            updateDialogShownThisLaunch = true
             showUpdateDialog = true
+        }
+    }
+    // Notification tap: always re-open the dialog immediately, even if the
+    // user had already dismissed it with "Later" this session.
+    LaunchedEffect(openUpdateRequested) {
+        if (openUpdateRequested && updateNotice != null) {
+            showUpdateDialog = true
+            UpdateDeepLink.handled()
         }
     }
     val query by viewModel.query.collectAsStateWithLifecycle()
@@ -4775,7 +4795,7 @@ private fun MhorpixApp(
             }
         }
 
-        // ---- Update available (once per launch) ----
+        // ---- Update available ----
         if (showUpdateDialog) {
             updateNotice?.let { update ->
                 UpdateAvailableDialog(
@@ -4786,6 +4806,13 @@ private fun MhorpixApp(
                     // sheet — only the sheet itself goes away. The top bar's
                     // update icon reopens it onto whatever state it reached.
                     onDismiss = { showUpdateDialog = false },
+                    onDontAskAgain = {
+                        AppUpdateChecker.dontAskAgain(context, update.version)
+                        // Cancel the still-visible shade notification too, so
+                        // the user isn't re-prompted from the notification shade.
+                        UpdateNotifications.cancel(context)
+                        showUpdateDialog = false
+                    },
                     onDownload = {
                         if (update.apkUrl != null) {
                             scope.launch { AppUpdateChecker.downloadApk(context) }

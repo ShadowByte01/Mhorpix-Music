@@ -8,19 +8,18 @@ import io.ktor.client.request.header
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Looks at the repo's "latest release" on GitHub once per launch and says whether it is newer
+ * Looks at the repo's releases on GitHub once per launch and says whether it is newer
  * than the running build. The installer is not run from here: the dialog opens the asset in the
  * browser, so the user installs it the way they installed the first one.
- *
- * GitHub's "latest" skips pre-releases and drafts, so a `-beta` desktop build is only ever
- * nudged toward a published release.
  */
 internal object DesktopUpdateChecker {
 
@@ -32,8 +31,11 @@ internal object DesktopUpdateChecker {
         val notes: String?,
     )
 
-    private const val LATEST_RELEASE_URL =
-        "https://api.github.com/repos/kushagrasinghx/Mhorpix/releases/latest"
+    private val RELEASE_URLS = listOf(
+        "https://api.github.com/repos/ShadowByte01/Mhorpix/releases",
+        "https://api.github.com/repos/ShadowByte01/Mhorpix-Music/releases",
+        "https://api.github.com/repos/ShadowByte01/Mhorpix/releases/latest",
+    )
 
     val currentVersion: String = System.getProperty("mhorpix.version") ?: "1.8-beta1"
 
@@ -47,22 +49,38 @@ internal object DesktopUpdateChecker {
     }
 
     suspend fun check(): UpdateInfo? = runCatching {
-        val response = http.get(LATEST_RELEASE_URL) {
-            header("Accept", "application/vnd.github+json")
+        for (url in RELEASE_URLS) {
+            val response = runCatching {
+                http.get(url) {
+                    header("Accept", "application/vnd.github+json")
+                    header("User-Agent", "Mhorpix-Desktop")
+                }
+            }.getOrNull() ?: continue
+
+            if (!response.status.isSuccess()) continue
+            val parsed = json.parseToJsonElement(response.bodyAsText())
+            val release = when (parsed) {
+                is JsonArray -> parsed
+                    .mapNotNull { it as? JsonObject }
+                    .firstOrNull { it["draft"]?.jsonPrimitive?.booleanOrNull != true }
+                is JsonObject -> parsed.takeUnless {
+                    it["draft"]?.jsonPrimitive?.booleanOrNull == true
+                }
+                else -> null
+            } ?: continue
+
+            val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: continue
+            val releaseUrl = release["html_url"]?.jsonPrimitive?.contentOrNull ?: continue
+            val latest = tag.trimStart('v', 'V')
+            if (!isNewer(latest, currentVersion)) continue
+            return@runCatching UpdateInfo(
+                version = latest,
+                releaseUrl = releaseUrl,
+                downloadUrl = installerUrl(release),
+                notes = release["body"]?.jsonPrimitive?.contentOrNull,
+            )
         }
-        if (!response.status.isSuccess()) return@runCatching null
-        val release = json.parseToJsonElement(response.bodyAsText()) as? JsonObject
-            ?: return@runCatching null
-        val tag = release["tag_name"]?.jsonPrimitive?.contentOrNull ?: return@runCatching null
-        val url = release["html_url"]?.jsonPrimitive?.contentOrNull ?: return@runCatching null
-        val latest = tag.removePrefix("v")
-        if (!isNewer(latest, currentVersion)) return@runCatching null
-        UpdateInfo(
-            version = latest,
-            releaseUrl = url,
-            downloadUrl = installerUrl(release),
-            notes = release["body"]?.jsonPrimitive?.contentOrNull,
-        )
+        null
     }.getOrNull()
 
     /**

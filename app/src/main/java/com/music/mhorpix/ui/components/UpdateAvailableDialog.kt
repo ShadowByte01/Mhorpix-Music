@@ -85,6 +85,7 @@ fun UpdateAvailableDialog(
     notes: String?,
     hazeState: HazeState,
     onDismiss: () -> Unit,
+    onDontAskAgain: () -> Unit,
     onDownload: () -> Unit,
     onCancelDownload: () -> Unit,
     onInstall: () -> Unit,
@@ -257,7 +258,13 @@ fun UpdateAvailableDialog(
                 else -> {
                     AlertAction(label = stringResource(R.string.download_now), emphasised = true, onClick = onDownload)
                     AlertRule()
-                    AlertAction(label = stringResource(R.string.remind_me_later), emphasised = false, onClick = onDismiss)
+                    AlertAction(label = stringResource(R.string.later), emphasised = false, onClick = onDismiss)
+                    AlertRule()
+                    AlertAction(
+                        label = stringResource(R.string.dont_ask_again),
+                        emphasised = false,
+                        onClick = onDontAskAgain,
+                    )
                 }
             }
         }
