@@ -74,6 +74,8 @@ import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Waves
 import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.Upgrade
+import com.music.mhorpix.data.AppUpdateChecker
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
@@ -180,6 +182,7 @@ fun SettingsScreen(
     onListenTogether: () -> Unit,
     onSpotifyCanvasAuth: () -> Unit,
     onAppLanguage: () -> Unit,
+    onCheckForUpdates: () -> Unit = {},
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -1440,6 +1443,20 @@ fun SettingsScreen(
                         )
                     },
                     onClick = { AppSettings.setShowNerdStats(!nerdStats) },
+                )
+            }
+        }
+
+        SearchableSettingsGroup(search, header = stringResource(R.string.software_update)) {
+            val checkForUpdatesTitle = "Check for Updates"
+            row(checkForUpdatesTitle, "update", "version", "download", "upgrade") {
+                val updateAvailable by AppUpdateChecker.available.collectAsStateWithLifecycle()
+                SettingsRow(
+                    icon = Icons.Rounded.Upgrade,
+                    title = checkForUpdatesTitle,
+                    subtitle = updateAvailable?.let { "v${it.version} available · Tap to update" }
+                        ?: "Version $version · Tap to check",
+                    onClick = onCheckForUpdates,
                 )
             }
         }

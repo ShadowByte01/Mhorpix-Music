@@ -1,4 +1,4 @@
-import java.util.concurrent.TimeUnit
+﻿import java.util.concurrent.TimeUnit
 import java.util.zip.ZipFile
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 val appVersion: String = providers.gradleProperty("mhorpix.version").orNull
     ?.removePrefix("v")
     ?.takeIf { it.isNotBlank() }
-    ?: "1.7.1"
+    ?: "1.7.2"
 
 /** Which platform this build is *for*, which is the host unless told otherwise. */
 val hostIsWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
@@ -26,7 +26,7 @@ val isArm64 = hostArch == "aarch64" || hostArch == "arm64"
 // Windows installer metadata requires MAJOR.MINOR.BUILD even though the app's public version is
 // intentionally displayed without a patch number (1.7 rather than 1.7.0).
 // The build number is the desktop version code; it also keeps "-beta1" out of the numeric installer version.
-val desktopVersionCode = 35
+val desktopVersionCode = 36
 val nativePackageVersion = appVersion.substringBefore('-').split('.').take(2).joinToString(".") + ".$desktopVersionCode"
 
 // FFmpeg decodes audio; see DesktopAudioDecoder.
@@ -124,7 +124,7 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:2.0.16")
 
     // Browsers keep their cookies in SQLite, and importing a session from one is how this app signs
-    // in — see DesktopBrowserCookies.
+    // in â€” see DesktopBrowserCookies.
     implementation("org.xerial:sqlite-jdbc:3.47.1.0")
     // Chromium protects its Windows master key with DPAPI. JNA's platform helpers let the app
     // unwrap that key in the same Windows user session without invoking a shell or exposing it.
@@ -181,14 +181,14 @@ val crossBuildingForWindows = targetOs == "windows" && !hostIsWindows
  * Resolved here rather than left to the child process. Gradle runs external
  * commands from the daemon, whose own PATH is whatever it was started with, so
  * a daemon reused from a shell that had no cmake cannot find the one the
- * current shell does — it fails with a bare "No such file or directory" while
+ * current shell does â€” it fails with a bare "No such file or directory" while
  * `cmake --version` works fine in the terminal beside it.
  */
 /**
  * Whether a tool on the PATH can actually be started.
  *
  * A PATH entry can be a wrapper script whose own interpreter is gone; it is a file, it is
- * executable, and it fails only at exec time — which surfaces as a build failure rather than as the
+ * executable, and it fails only at exec time â€” which surfaces as a build failure rather than as the
  * missing-tool path this build already handles.
  */
 fun runs(tool: File): Boolean = runCatching {
@@ -240,7 +240,7 @@ val buildAnalysisNative by tasks.registering {
         val cmake = findOnPath("cmake")
         if (cmake == null) {
             logger.lifecycle(
-                "no usable cmake — building without the Automix analyser. If cmake is installed, " +
+                "no usable cmake â€” building without the Automix analyser. If cmake is installed, " +
                     "a Gradle daemon started before it was on PATH may be in use: ./gradlew --stop",
             )
         }
@@ -249,7 +249,7 @@ val buildAnalysisNative by tasks.registering {
         val ninja = targetOs != "windows" || findOnPath("ninja") != null
         if (cmake != null && (!compiler || !ninja)) {
             logger.lifecycle(
-                "$compilerName or Ninja not found — the Windows build will have no Automix analyser. " +
+                "$compilerName or Ninja not found â€” the Windows build will have no Automix analyser. " +
                     "Install a MinGW C++ compiler and Ninja, then rebuild.",
             )
         }
@@ -317,7 +317,7 @@ val buildWindowNative by tasks.registering {
         val ninja = findOnPath("ninja")
         if (cmake == null || compiler == null || ninja == null) {
             logger.lifecycle(
-                "cmake, Ninja, or a MinGW C++ compiler is unavailable — the Windows build will " +
+                "cmake, Ninja, or a MinGW C++ compiler is unavailable â€” the Windows build will " +
                     "fall back to Compose's frameless window behaviour.",
             )
         }
@@ -472,15 +472,15 @@ val windowsPortableAssemble by tasks.registering {
             append("windowsPortable: verified")
             when {
                 analyser && smtc ->
-                    append(" — Compose runtime, Windows renderer, Windows FFmpeg, Automix analyser, SMTC media controls all present.")
+                    append(" â€” Compose runtime, Windows renderer, Windows FFmpeg, Automix analyser, SMTC media controls all present.")
                 !analyser && !smtc ->
-                    append(" — no mhorpix_analysis.dll (Automix will not run) and no mhorpix_smtc.dll (Windows media controls will not work). " +
+                    append(" â€” no mhorpix_analysis.dll (Automix will not run) and no mhorpix_smtc.dll (Windows media controls will not work). " +
                         "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc")
                 !analyser ->
-                    append(" — no mhorpix_analysis.dll — Automix will not run in this archive. " +
+                    append(" â€” no mhorpix_analysis.dll â€” Automix will not run in this archive. " +
                         "Rebuild with: nix-shell -p cmake pkgsCross.mingwW64.buildPackages.gcc")
                 !smtc ->
-                    append(" — no mhorpix_smtc.dll — Windows media controls (media keys, Bluetooth buttons, " +
+                    append(" â€” no mhorpix_smtc.dll â€” Windows media controls (media keys, Bluetooth buttons, " +
                         "volume flyout card) will not work. The SMTC library is only built with MSVC or a " +
                         "MinGW that has the WinRT ABI headers. See CMakeLists.txt for details.")
             }
@@ -540,7 +540,7 @@ compose.desktop {
             packageVersion = nativePackageVersion
             description = if (targetOs == "windows") "Mhorpix" else "Aesthetic YouTube Music client"
             vendor = "Mhorpix contributors"
-            copyright = "Copyright © 2026 Mhorpix contributors"
+            copyright = "Copyright Â© 2026 Mhorpix contributors"
 
             modules(
                 "java.base",

@@ -147,6 +147,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.music.mhorpix.data.model.durationMillis
 import com.music.mhorpix.data.scrobbling.LastFM
+import com.music.mhorpix.BuildConfig
 import com.music.mhorpix.data.settings.AppSettings
 import com.music.mhorpix.data.settings.LibrarySort
 import com.music.mhorpix.data.settings.ThemeMode
@@ -246,6 +247,7 @@ import com.music.mhorpix.ui.components.MiniPlayer
 import com.music.mhorpix.ui.components.QueueActionNotice
 import com.music.mhorpix.ui.components.QueueActionNoticeHost
 import com.music.mhorpix.ui.components.TopBarAccountButton
+import androidx.compose.material.icons.rounded.Groups
 import com.music.mhorpix.ui.screens.SegmentedControl
 import com.music.mhorpix.ui.components.SearchField
 import com.music.mhorpix.sharedui.resources.Res as SharedRes
@@ -266,6 +268,11 @@ import androidx.media3.common.Player
 import com.music.mhorpix.data.YtMusicRepository
 import com.music.mhorpix.ui.player.NowPlayingScreen
 import com.music.mhorpix.ui.player.LocalMinimalMode
+import com.music.mhorpix.data.p2p.P2pConnectionInfo
+import com.music.mhorpix.data.p2p.P2pController
+import com.music.mhorpix.ui.screens.p2p.P2pListenTogetherScreen
+import com.music.mhorpix.ui.screens.p2p.P2pQrScannerScreen
+
 import com.music.mhorpix.ui.player.PlayerSheetMotion
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.drawBehind
@@ -559,6 +566,8 @@ private fun MhorpixApp(
     var showAccountScrobbling by rememberSaveable { mutableStateOf(false) }
     var showSources by rememberSaveable { mutableStateOf(false) }
     var showListenTogether by rememberSaveable { mutableStateOf(false) }
+    var showP2pListenTogether by rememberSaveable { mutableStateOf(false) }
+    var showP2pScanner by rememberSaveable { mutableStateOf(false) }
     var showEqualizer by rememberSaveable { mutableStateOf(false) }
     var showSpotifyCanvasAuth by remember { mutableStateOf(false) }
 
@@ -659,6 +668,7 @@ private fun MhorpixApp(
         browseActions = target
     }
     val autoplay by AppSettings.autoplay.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { P2pController.init(context.applicationContext) }
     val partyState by ListenTogether.state.collectAsStateWithLifecycle()
     // The same answer the playback service acts on, rather than a second one
     // derived here — see [autoplayEnabledFor]. Drawing the local preference in
@@ -2812,6 +2822,24 @@ private fun MhorpixApp(
                             },
                             onSpotifyCanvasAuth = { showSpotifyCanvasAuth = true },
                             onAppLanguage = { showAppLanguage = true },
+                            onCheckForUpdates = {
+                                if (updateNotice != null) {
+                                    showUpdateDialog = true
+                                } else {
+                                    scope.launch {
+                                        Toast.makeText(context, "Checking for updates…", Toast.LENGTH_SHORT).show()
+                                        AppUpdateChecker.check(context)
+                                        if (AppUpdateChecker.available.value != null) {
+                                            showUpdateDialog = true
+                                        } else {
+                                            val currentVer = runCatching {
+                                                context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                                            }.getOrNull() ?: BuildConfig.VERSION_NAME
+                                            Toast.makeText(context, "Mhorpix is up to date (v$currentVer)", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            },
                             contentPadding = listPadding,
                         )
                     } else if (page != null && page.browseId.isDeviceFolder()) {
@@ -3362,6 +3390,29 @@ private fun MhorpixApp(
                             EqualizerScreen(contentPadding = listPadding)
                         }
                     }
+                    "p2p_listen_together" -> {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background,
+                        ) {
+                            if (showP2pScanner) {
+                                P2pQrScannerScreen(
+                                    onCode = { raw ->
+                                        P2pConnectionInfo.decode(raw)?.let { info ->
+                                            P2pController.joinRoom(info, context.applicationContext)
+                                        }
+                                        showP2pScanner = false
+                                    },
+                                    onDismiss = { showP2pScanner = false },
+                                )
+                            } else {
+                                P2pListenTogetherScreen(
+                                    onDismiss = { settingsSubScreen = null },
+                                    onOpenScanner = { showP2pScanner = true },
+                                )
+                            }
+                        }
+                    }
                     "replay" -> {
                         if (showReplay && !showReplayShare) {
                             Surface(
@@ -3718,6 +3769,10 @@ private fun MhorpixApp(
                             // [TopBarDownloadButton], which decides that for
                             // itself rather than being told.
                             TopBarDownloadButton(onClick = { showDownloadManager = true })
+                            // P2P Listen Together — two-people icon
+                            IconButton(onClick = { settingsSubScreen = "p2p_listen_together" }) {
+                                Icon(Icons.Rounded.Groups, contentDescription = "P2P Listen Together")
+                            }
                             TopBarAccountButton(
                                 account = account,
                                 onClick = {
