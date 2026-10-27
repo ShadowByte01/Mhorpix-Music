@@ -14,10 +14,11 @@
 [![Latest release](https://img.shields.io/github/v/release/ShadowByte01/Mhorpix-Music?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/releases)
 [![License](https://img.shields.io/github/license/ShadowByte01/Mhorpix-Music?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/blob/main/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/ShadowByte01/Mhorpix-Music/total?style=for-the-badge&labelColor=0d1117)](https://github.com/ShadowByte01/Mhorpix-Music/releases)
+[![Website](https://img.shields.io/badge/Website-mhorpix.vercel.app-white?style=for-the-badge&logo=vercel&logoColor=white&labelColor=0d1117)](https://mhorpix.vercel.app)
 
 <br/>
 
-[**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Credits**](#credits) · [**Disclaimer**](#disclaimer)
+[**Official Website**](https://mhorpix.vercel.app) · [**Download**](#download) · [**Features**](#features) · [**Contributing**](#contributing) · [**Credits**](#credits) · [**Disclaimer**](#disclaimer)
 
 </div>
 
