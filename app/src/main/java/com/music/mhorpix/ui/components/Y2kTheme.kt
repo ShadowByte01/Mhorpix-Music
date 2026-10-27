@@ -124,8 +124,8 @@ fun FrutigerAeroBackground(modifier: Modifier = Modifier) {
         // Water droplets — glossy circles with radial gradient highlights
         droplets.forEachIndexed { i, d ->
             val t = (drift + d.phase) % 1f
-            val x = d.x + sin(t * TWO_PI) * d.amp
-            val y = d.y + sin((t + d.phase) * TWO_PI) * d.amp * 0.5f
+            val x = (d.x + sin((t * TWO_PI).toDouble()) * d.amp).toFloat()
+            val y = (d.y + sin(((t + d.phase) * TWO_PI).toDouble()) * d.amp * 0.5f).toFloat()
             val r = d.radius
             drawCircle(
                 brush = Brush.radialGradient(
@@ -165,8 +165,8 @@ fun FrutigerAeroDroplets(modifier: Modifier = Modifier) {
     Box(modifier = modifier.drawBehind {
         droplets.forEachIndexed { i, d ->
             val t = (drift + d.phase) % 1f
-            val x = d.x + sin(t * TWO_PI) * d.amp
-            val y = d.y + sin((t + d.phase) * TWO_PI) * d.amp * 0.5f
+            val x = (d.x + sin((t * TWO_PI).toDouble()) * d.amp).toFloat()
+            val y = (d.y + sin(((t + d.phase) * TWO_PI).toDouble()) * d.amp * 0.5f).toFloat()
             val r = d.radius
             drawCircle(
                 brush = Brush.radialGradient(

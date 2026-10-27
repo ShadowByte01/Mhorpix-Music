@@ -37,7 +37,7 @@ internal object DesktopUpdateChecker {
         "https://api.github.com/repos/ShadowByte01/Mhorpix/releases/latest",
     )
 
-    val currentVersion: String = System.getProperty("mhorpix.version") ?: "1.7.3"
+    val currentVersion: String = System.getProperty("mhorpix.version") ?: "1.8-beta1"
 
     private val json = Json { ignoreUnknownKeys = true }
 

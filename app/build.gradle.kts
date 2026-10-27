@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 import java.io.FileInputStream
 
 plugins {
@@ -24,8 +24,8 @@ val lastfmSecret: String = (
     ).trim()
 
 /*
- * Where Listen Together's party server lives. Not a credential — it is a public
- * URL, and every device in a party has to be pointed at the same one — but it is
+ * Where Listen Together's party server lives. Not a credential â€” it is a public
+ * URL, and every device in a party has to be pointed at the same one â€” but it is
  * deployment-specific rather than a property of the source, which is what puts
  * it here beside the others instead of in a constant.
  *
@@ -49,8 +49,8 @@ val listenTogetherServer: String = (
  * still get the update prompt once the matching tag is actually published.
  *
  * Applied to release builds as well as debug ones, and that is the whole
- * point of it. A sideloaded beta is a *release* build — installed over the
- * real package — so leaving the marker off it is exactly the case that
+ * point of it. A sideloaded beta is a *release* build â€” installed over the
+ * real package â€” so leaving the marker off it is exactly the case that
  * strands a tester: their build calls itself 1.6.1, the published 1.6.1
  * then matches it, isNewer() says no, and no prompt ever comes. Blanking
  * this line is the one step that turns a beta into a release, so it is
@@ -70,8 +70,8 @@ android {
         // Haze falls back to a translucent scrim below that.
         minSdk = 26
         targetSdk = 36
-        versionCode = 34
-        versionName = "1.7.3"
+        versionCode = 35
+        versionName = "1.7.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -113,7 +113,7 @@ android {
         }
         create("prod") {
             dimension = "env"
-            // Matches defaultConfig — this is the package already shipped/installed.
+            // Matches defaultConfig â€” this is the package already shipped/installed.
         }
     }
 
@@ -144,18 +144,18 @@ android {
             if (keystorePropsFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            // Carried here too — see [betaSuffix]. A sideloaded beta is a
+            // Carried here too â€” see [betaSuffix]. A sideloaded beta is a
             // release build, and it is the one that most needs the marker.
             if (betaSuffix.isNotEmpty()) versionNameSuffix = "-$betaSuffix"
             /*
              * On for what it does to speed, not size. Compose is written to be
-             * run through R8 — without it every composable keeps the debug-era
+             * run through R8 â€” without it every composable keeps the debug-era
              * shape the compiler emits, and the whole UI runs measurably slower.
              *
              * Nothing is renamed (-dontobfuscate), and every library that reaches
-             * for classes by name — Rhino running YouTube's player JavaScript,
+             * for classes by name â€” Rhino running YouTube's player JavaScript,
              * NewPipe, InnerTubeX, QuickJS, SMBJ and BouncyCastle, ONNX's JNI,
-             * protobuf-lite, Ktor — is kept whole: see proguard-rules.pro. What R8
+             * protobuf-lite, Ktor â€” is kept whole: see proguard-rules.pro. What R8
              * is left to optimise is Compose, Media3, coroutines and our own
              * code, which is where the time goes. Checked on a device through the
              * `benchmark` build type below before it ships.
@@ -170,7 +170,7 @@ android {
          * The release build, installable next to the dev and prod apps: same R8,
          * same non-debuggable runtime, signed with the debug key under its own
          * package so it never replaces either. For measuring startup the way
-         * users get it and for checking that shrinking broke nothing — a debug
+         * users get it and for checking that shrinking broke nothing â€” a debug
          * build is interpreted and verified at runtime and says little about
          * either. `./gradlew installDevBenchmark`.
          */
@@ -200,7 +200,7 @@ android {
             // Unit tests run against a stub android.jar whose methods throw
             // rather than return. That is the right default for anything whose
             // behaviour depends on the framework, and wrong for android.util.Log
-            // — which [TrackLog] calls on every decision the source layer makes,
+            // â€” which [TrackLog] calls on every decision the source layer makes,
             // so a test of that layer fails on the logging rather than on the
             // logic it was written to check.
             isReturnDefaultValues = true
@@ -261,8 +261,8 @@ dependencies {
     implementation(composeBom)
     // Pinned above the BOM's 1.7.6: [IosOverscroll] uses OverscrollFactory,
     // which that version doesn't have. Newer foundation alongside the BOM's
-    // older ui/material3 is a combination Compose supports deliberately —
-    // foundation depends on ui, not the reverse — and this exact pairing was
+    // older ui/material3 is a combination Compose supports deliberately â€”
+    // foundation depends on ui, not the reverse â€” and this exact pairing was
     // already in effect (foundation was reaching 1.10.0 transitively through
     // the liquid-glass library before that dependency was removed).
     implementation("androidx.compose.foundation:foundation:1.10.0")
@@ -286,13 +286,13 @@ dependencies {
     implementation("androidx.media3:media3-session:1.11.0")
     implementation("androidx.media3:media3-common:1.11.0")
     implementation("androidx.media3:media3-datasource-okhttp:1.11.0")
-    // Audio is progressive, but Apple serves its motion artwork as HLS — this
+    // Audio is progressive, but Apple serves its motion artwork as HLS â€” this
     // is what lets the animated sleeve play it. See CanvasArtworkPlayer.
     implementation("androidx.media3:media3-exoplayer-hls:1.11.0")
     // Source modules hand back manifests rather than files, and which kind is
     // the backend's choice, not ours: the Tidal one served `.m3u8` until
     // September 2026 and `.mpd` after it, for the same track and the same
-    // request. Without this artifact a DASH manifest is not merely unplayed —
+    // request. Without this artifact a DASH manifest is not merely unplayed â€”
     // DefaultMediaSourceFactory cannot build a source for it, falls back to
     // progressive, and the extractors try to sniff XML as audio
     // (ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED). See withResolvedStreamType.
@@ -319,7 +319,7 @@ dependencies {
 
     // ---- QR encoding, for the party invite ----
     // `core` only: the `android-core`/`zxing-android-embedded` artifacts bring
-    // a camera scanner and an Activity with it, and nothing here reads a code —
+    // a camera scanner and an Activity with it, and nothing here reads a code â€”
     // a party is joined by tapping somebody else's link or typing six
     // characters. This produces the bit matrix; the drawing is ours, in
     // [com.music.mhorpix.ui.components.QrCode], so the result is styled like
@@ -332,7 +332,7 @@ dependencies {
     implementation("androidx.camera:camera-view:1.4.1")
 
     // ---- Markdown rendering (release notes in the update dialog) ----
-    // Pure Compose, not an AndroidView wrapper — needed so the text composes
+    // Pure Compose, not an AndroidView wrapper â€” needed so the text composes
     // correctly under the dialog's Haze blur.
     implementation("com.halilibo.compose-richtext:richtext-ui-material3:0.20.0")
     implementation("com.halilibo.compose-richtext:richtext-commonmark:0.20.0")
@@ -356,7 +356,7 @@ dependencies {
     // Pinned to v0.26.3, not the newer v0.26.4: v0.26.4's player-JS parser fails with
     // "Could not parse deobfuscation function" on the current player build, which blocks
     // WEB_REMIX's ciphered formats entirely. v0.26.3 solves the same signatures cleanly
-    // against the same player JS — confirmed side by side against PixelMusic-ref, which
+    // against the same player JS â€” confirmed side by side against PixelMusic-ref, which
     // pins v0.26.3 and doesn't hit the parse failure.
     //
     // Consumed as a stripped jar rather than as the module, so its own
@@ -393,7 +393,7 @@ dependencies {
     // The framework and the router only. media3-cast is left out on purpose:
     // its CastPlayer hands the receiver whatever URI a MediaItem carries, and
     // ours are `mhorpix://` addresses that only the service's resolver can
-    // turn into a real stream — see [com.music.mhorpix.playback.cast.CastPlayback].
+    // turn into a real stream â€” see [com.music.mhorpix.playback.cast.CastPlayback].
     implementation("com.google.android.gms:play-services-cast-framework:22.2.0")
     implementation("androidx.mediarouter:mediarouter:1.8.1")
 
@@ -409,8 +409,8 @@ dependencies {
 }
 
 /*
- * A debug APK lands on the device uncompiled — `dumpsys package dexopt` reports
- * it as run-from-apk — so every launch verifies the whole app's classes at
+ * A debug APK lands on the device uncompiled â€” `dumpsys package dexopt` reports
+ * it as run-from-apk â€” so every launch verifies the whole app's classes at
  * runtime before a line of our code runs. Measured on the BlueStacks box, that
  * was about two seconds of every cold start and most of why the dev build felt
  * so much slower than a release one. `verify` is the cheapest filter that

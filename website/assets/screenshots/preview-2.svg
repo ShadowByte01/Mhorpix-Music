@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 2340" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07090e"/>
+      <stop offset="50%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#0a0c14"/>
+    </linearGradient>
+    <linearGradient id="lyricsGlass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="lyricsActive" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f2fe"/>
+      <stop offset="100%" stop-color="#4facfe"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="2340" fill="url(#bg2)"/>
+
+  <!-- Top bar -->
+  <rect x="60" y="140" width="960" height="90" rx="45" fill="url(#lyricsGlass)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <circle cx="120" cy="185" r="22" fill="#00f2fe" opacity="0.8"/>
+  <text x="540" y="195" font-family="-apple-system, sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle">Live Synced Lyrics</text>
+
+  <!-- Lyrics lines -->
+  <g transform="translate(100, 360)">
+    <!-- Past line -->
+    <text x="0" y="100" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.25)">I heard you on the wireless</text>
+    <text x="0" y="190" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.25)">back in fifty-two</text>
+
+    <!-- Past line 2 -->
+    <text x="0" y="320" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.4)">Lying awake, intent on</text>
+    <text x="0" y="410" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.4)">tuning into you</text>
+
+    <!-- ACTIVE SYLLABLE LINE (Glow & Highlight) -->
+    <g transform="translate(0, 560)">
+      <rect x="-30" y="-70" width="940" height="260" rx="32" fill="url(#lyricsGlass)" stroke="rgba(0,242,254,0.4)" stroke-width="2"/>
+      <text x="20" y="20" font-family="-apple-system, sans-serif" font-size="64" font-weight="900" fill="url(#lyricsActive)">If I was young</text>
+      <text x="20" y="110" font-family="-apple-system, sans-serif" font-size="64" font-weight="900" fill="#ffffff">it didn't stop you coming through</text>
+    </g>
+
+    <!-- Upcoming lines -->
+    <text x="0" y="930" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.3)">They took the credit for</text>
+    <text x="0" y="1020" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.3)">your second symphony</text>
+
+    <text x="0" y="1160" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.2)">Rewritten by machine</text>
+    <text x="0" y="1250" font-family="-apple-system, sans-serif" font-size="52" font-weight="700" fill="rgba(255,255,255,0.2)">and new technology</text>
+  </g>
+
+  <!-- Bottom Floating Capsule -->
+  <rect x="140" y="2100" width="800" height="110" rx="55" fill="url(#lyricsGlass)" stroke="rgba(255,255,255,0.25)" stroke-width="2.5"/>
+  <text x="540" y="2165" font-family="-apple-system, sans-serif" font-size="24" fill="rgba(255,255,255,0.7)" text-anchor="middle">Apple Music Style Synced Highlighting</text>
+</svg>

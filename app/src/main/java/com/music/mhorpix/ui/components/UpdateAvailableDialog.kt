@@ -59,8 +59,6 @@ private val DOWNLOAD_ROW_HEIGHT = 4.dp
 /** How much of the card's height the release notes are allowed to fill before scrolling. */
 private val NOTES_MAX_HEIGHT = 220.dp
 
-private val EMOJI_REGEX = Regex("[\\p{So}\\p{Cn}\\u2600-\\u27BF\\u2B50\\u2B55\\uFE00-\\uFE0F\\u200D\\u20E3]|[\\uD83C-\\uDBFF][\\uDC00-\\uDFFF]")
-
 /**
  * Once-per-launch nudge that a newer build is on GitHub Releases — the top
  * bar's [Icons.Rounded.Upgrade][androidx.compose.material.icons.rounded.Upgrade]
@@ -142,7 +140,7 @@ fun UpdateAvailableDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = stringResource(R.string.software_update).replace(EMOJI_REGEX, "").trim(),
+                    text = stringResource(R.string.software_update),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.W600,
@@ -150,18 +148,17 @@ fun UpdateAvailableDialog(
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                 )
-                val bodyText = when (state) {
-                    is AppUpdateChecker.DownloadState.Downloading ->
-                        stringResource(R.string.update_downloading_body, version)
-                    is AppUpdateChecker.DownloadState.Ready ->
-                        stringResource(R.string.update_ready_body, version)
-                    is AppUpdateChecker.DownloadState.Failed ->
-                        stringResource(R.string.update_failed_body, version)
-                    else ->
-                        stringResource(R.string.update_available_body, version)
-                }
                 Text(
-                    text = bodyText.replace(EMOJI_REGEX, "").trim(),
+                    text = when (state) {
+                        is AppUpdateChecker.DownloadState.Downloading ->
+                            stringResource(R.string.update_downloading_body, version)
+                        is AppUpdateChecker.DownloadState.Ready ->
+                            stringResource(R.string.update_ready_body, version)
+                        is AppUpdateChecker.DownloadState.Failed ->
+                            stringResource(R.string.update_failed_body, version)
+                        else ->
+                            stringResource(R.string.update_available_body, version)
+                    },
                     modifier = Modifier.padding(top = 4.dp),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontSize = 13.sp,
@@ -197,7 +194,7 @@ fun UpdateAvailableDialog(
                 }
                 if (state is AppUpdateChecker.DownloadState.Failed) {
                     Text(
-                        text = (state as AppUpdateChecker.DownloadState.Failed).message.replace(EMOJI_REGEX, "").trim(),
+                        text = (state as AppUpdateChecker.DownloadState.Failed).message,
                         modifier = Modifier.padding(top = 6.dp),
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         color = MaterialTheme.colorScheme.error,
@@ -205,18 +202,14 @@ fun UpdateAvailableDialog(
                     )
                 }
 
-                // The release's own notes, rendered as Markdown without any emojis.
-                val cleanNotes = remember(notes) {
-                    notes?.replace(EMOJI_REGEX, "")
-                        ?.lines()
-                        ?.joinToString("\n") { it.trimEnd() }
-                        ?.replace(Regex(" {2,}"), " ")
-                        ?.trim()
-                }
-                if (!cleanNotes.isNullOrBlank()) {
+                // The release's own notes, rendered as Markdown rather than
+                // dumped as raw text — GitHub release bodies lean on headings,
+                // bullet lists and bold for the changelog, and those are the
+                // whole point of reading this before installing.
+                if (!notes.isNullOrBlank()) {
                     AlertRule(modifier = Modifier.padding(top = 12.dp))
                     Text(
-                        text = stringResource(R.string.whats_new).replace(EMOJI_REGEX, "").trim(),
+                        text = stringResource(R.string.whats_new),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
@@ -240,7 +233,7 @@ fun UpdateAvailableDialog(
                         // default regardless of theme.
                         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                             RichText(style = RichTextStyle.Default) {
-                                Markdown(cleanNotes)
+                                Markdown(notes)
                             }
                         }
                     }
@@ -250,25 +243,25 @@ fun UpdateAvailableDialog(
             AlertRule()
             when (state) {
                 is AppUpdateChecker.DownloadState.Downloading -> {
-                    AlertAction(label = stringResource(R.string.cancel).replace(EMOJI_REGEX, "").trim(), emphasised = false, onClick = onCancelDownload)
+                    AlertAction(label = stringResource(R.string.cancel), emphasised = false, onClick = onCancelDownload)
                 }
                 is AppUpdateChecker.DownloadState.Ready -> {
-                    AlertAction(label = stringResource(R.string.install_now).replace(EMOJI_REGEX, "").trim(), emphasised = true, onClick = onInstall)
+                    AlertAction(label = stringResource(R.string.install_now), emphasised = true, onClick = onInstall)
                     AlertRule()
-                    AlertAction(label = stringResource(R.string.later).replace(EMOJI_REGEX, "").trim(), emphasised = false, onClick = onDismiss)
+                    AlertAction(label = stringResource(R.string.later), emphasised = false, onClick = onDismiss)
                 }
                 is AppUpdateChecker.DownloadState.Failed -> {
-                    AlertAction(label = stringResource(R.string.try_again).replace(EMOJI_REGEX, "").trim(), emphasised = true, onClick = onDownload)
+                    AlertAction(label = stringResource(R.string.try_again), emphasised = true, onClick = onDownload)
                     AlertRule()
-                    AlertAction(label = stringResource(R.string.open_releases_page).replace(EMOJI_REGEX, "").trim(), emphasised = false, onClick = onOpenReleasePage)
+                    AlertAction(label = stringResource(R.string.open_releases_page), emphasised = false, onClick = onOpenReleasePage)
                 }
                 else -> {
-                    AlertAction(label = stringResource(R.string.download_now).replace(EMOJI_REGEX, "").trim(), emphasised = true, onClick = onDownload)
+                    AlertAction(label = stringResource(R.string.download_now), emphasised = true, onClick = onDownload)
                     AlertRule()
-                    AlertAction(label = stringResource(R.string.later).replace(EMOJI_REGEX, "").trim(), emphasised = false, onClick = onDismiss)
+                    AlertAction(label = stringResource(R.string.later), emphasised = false, onClick = onDismiss)
                     AlertRule()
                     AlertAction(
-                        label = stringResource(R.string.dont_ask_again).replace(EMOJI_REGEX, "").trim(),
+                        label = stringResource(R.string.dont_ask_again),
                         emphasised = false,
                         onClick = onDontAskAgain,
                     )

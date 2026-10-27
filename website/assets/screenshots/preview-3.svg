@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 2340" width="100%" height="100%">
+  <defs>
+    <linearGradient id="aeroSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#46a0f0"/>
+      <stop offset="35%" stop-color="#72c8fa"/>
+      <stop offset="70%" stop-color="#a8f0e0"/>
+      <stop offset="100%" stop-color="#56dbb2"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="48%" stop-color="#e2e8f0"/>
+      <stop offset="50%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <linearGradient id="aquaBtn" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8ce9ff"/>
+      <stop offset="50%" stop-color="#18b0f0"/>
+      <stop offset="51%" stop-color="#0080d8"/>
+      <stop offset="100%" stop-color="#00a0f8"/>
+    </linearGradient>
+    <radialGradient id="dropHighlight" cx="30%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
+      <stop offset="40%" stop-color="rgba(255,255,255,0.4)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Frutiger Aero gradient background -->
+  <rect width="1080" height="2340" fill="url(#aeroSky)"/>
+
+  <!-- Water droplets -->
+  <circle cx="200" cy="400" r="80" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="200" cy="400" r="80" fill="url(#dropHighlight)"/>
+  <circle cx="850" cy="650" r="110" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="850" cy="650" r="110" fill="url(#dropHighlight)"/>
+  <circle cx="350" cy="1200" r="60" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="350" cy="1200" r="60" fill="url(#dropHighlight)"/>
+  <circle cx="780" cy="1700" r="95" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="780" cy="1700" r="95" fill="url(#dropHighlight)"/>
+
+  <!-- Top chrome header -->
+  <rect x="60" y="140" width="960" height="100" rx="30" fill="url(#chrome)" stroke="#ffffff" stroke-width="3"/>
+  <text x="540" y="202" font-family="-apple-system, sans-serif" font-size="32" font-weight="900" fill="#1e293b" text-anchor="middle">✨ Y2K FRUTIGER AERO MODE</text>
+
+  <!-- CD Disc Player Card -->
+  <g transform="translate(140, 380)">
+    <rect width="800" height="880" rx="40" fill="rgba(255,255,255,0.65)" stroke="#ffffff" stroke-width="4"/>
+    <!-- Holographic CD -->
+    <circle cx="400" cy="400" r="320" fill="url(#chrome)" stroke="#ffffff" stroke-width="3"/>
+    <circle cx="400" cy="400" r="280" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="12"/>
+    <circle cx="400" cy="400" r="180" fill="none" stroke="rgba(0,180,240,0.4)" stroke-width="8"/>
+    <circle cx="400" cy="400" r="100" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="400" cy="400" r="40" fill="#72c8fa"/>
+    <text x="400" y="780" font-family="-apple-system, sans-serif" font-size="28" font-weight="800" fill="#0f172a" text-anchor="middle">VINTAGE CD DISC DRIVE</text>
+  </g>
+
+  <!-- Glossy Aqua Controls -->
+  <g transform="translate(140, 1340)">
+    <rect width="800" height="240" rx="40" fill="rgba(255,255,255,0.55)" stroke="#ffffff" stroke-width="3"/>
+    <!-- Play button Aqua -->
+    <circle cx="400" cy="120" r="75" fill="url(#aquaBtn)" stroke="#ffffff" stroke-width="4"/>
+    <path d="M385 85 l50 35 l-50 35 z" fill="#ffffff"/>
+    <!-- Prev -->
+    <circle cx="220" cy="120" r="50" fill="url(#chrome)" stroke="#ffffff" stroke-width="3"/>
+    <path d="M230 100 l-25 20 l25 20 z" fill="#1e293b"/>
+    <!-- Next -->
+    <circle cx="580" cy="120" r="50" fill="url(#chrome)" stroke="#ffffff" stroke-width="3"/>
+    <path d="M570 100 l25 20 l-25 20 z" fill="#1e293b"/>
+  </g>
+
+  <!-- Bottom glass capsule -->
+  <rect x="140" y="2100" width="800" height="110" rx="55" fill="url(#chrome)" stroke="#ffffff" stroke-width="3"/>
+  <text x="540" y="2168" font-family="-apple-system, sans-serif" font-size="26" font-weight="800" fill="#0284c7" text-anchor="middle">Aqua Gloss &amp; Water Drops Active</text>
+</svg>

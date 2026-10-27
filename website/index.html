@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mhorpix — Aesthetic High-Res YouTube Music Client with Liquid Glass</title>
+  <meta name="description" content="An aesthetic YouTube Music client crafted with frosted liquid glass, 24-bit Hi-Res lossless playback, animated word-synced lyrics, and P2P party listening.">
+  <meta name="keywords" content="Mhorpix, YouTube Music, Liquid Glass, Hi-Res Audio, FLAC, Y2K Theme, Music Player, Open Source APK">
+  
+  <!-- OpenGraph / Social -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Mhorpix — Aesthetic High-Res YouTube Music Client">
+  <meta property="og:description" content="Music, elevated to pure liquid art. Hi-Res FLAC audio, frosted liquid glass, and synced animated lyrics.">
+  <meta property="og:image" content="assets/banner.png">
+  <meta name="theme-color" content="#07090e">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/logo.png">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/glass.css">
+  <link rel="stylesheet" href="css/y2k.css">
+</head>
+<body>
+
+  <!-- Ambient Aurora Glow Orbs -->
+  <div class="aurora-bg">
+    <div class="aurora-orb orb-1"></div>
+    <div class="aurora-orb orb-2"></div>
+    <div class="aurora-orb orb-3"></div>
+  </div>
+
+  <!-- Animated Water Droplets Canvas (for Y2K Mode) -->
+  <canvas id="water-droplets-canvas"></canvas>
+
+  <!-- Sticky Floating Glass Navigation Bar -->
+  <header class="header-nav">
+    <div class="nav-wrapper">
+      <div class="glass-nav-pill" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+        <!-- Brand -->
+        <a href="index.html" class="brand">
+          <img src="assets/logo.png" alt="Mhorpix Logo" class="brand-logo">
+          <span class="brand-name">Mhorpix</span>
+        </a>
+
+        <!-- Desktop Navigation Links -->
+        <ul class="nav-menu">
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#previews" class="nav-link">Previews</a></li>
+          <li><a href="#playground" class="nav-link">Liquid Glass</a></li>
+          <li><a href="releases.html" class="nav-link">Releases</a></li>
+          <li><a href="https://github.com/ShadowByte01/Mhorpix-Music" target="_blank" rel="noopener noreferrer" class="nav-link">GitHub ↗</a></li>
+        </ul>
+
+        <!-- Nav Right Actions -->
+        <div class="nav-actions">
+          <!-- Y2K Frutiger Aero Mode Toggle -->
+          <button id="y2k-toggle-btn" class="glass-btn btn-icon y2k-toggle-btn" title="Toggle Y2K Frutiger Aero Theme" aria-label="Toggle Y2K Mode">
+            ✨
+          </button>
+
+          <!-- Direct Download Action Button -->
+          <button class="glass-btn glass-btn-primary btn-download-apk" title="Download Latest Mhorpix APK">
+            <span>Download APK</span>
+            <span class="current-version-label" style="font-size: 11px; opacity: 0.85;">v1.7.4</span>
+          </button>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button class="mobile-menu-toggle" id="mobile-menu-btn" aria-label="Open Navigation Menu">
+            ☰
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Drawer Menu -->
+  <nav class="liquid-glass mobile-nav-drawer" id="mobile-drawer">
+    <a href="#features" class="mobile-nav-link">Features</a>
+    <a href="#previews" class="mobile-nav-link">App Previews</a>
+    <a href="#playground" class="mobile-nav-link">Liquid Glass Playground</a>
+    <a href="releases.html" class="mobile-nav-link">All Releases &amp; Builds</a>
+    <a href="https://github.com/ShadowByte01/Mhorpix-Music" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">GitHub Repository ↗</a>
+    <button id="y2k-mobile-btn" class="glass-btn y2k-toggle-btn" style="margin-top: 10px; width: 100%;">
+      <span>✨ Toggle Y2K Frutiger Aero</span>
+    </button>
+  </nav>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero container">
+      <!-- Release Version Pill -->
+      <div class="hero-badge-wrap">
+        <a href="#releases" class="glass-badge" style="text-decoration: none;">
+          <span style="font-size: 16px;">✦</span>
+          <span>Mhorpix v1.7.4 Released — Crash Fixes &amp; Liquid Glass</span>
+          <span style="opacity: 0.6;">→</span>
+        </a>
+      </div>
+
+      <!-- Hero Headline -->
+      <h1 class="hero-title">
+        Music, Elevated to <br>
+        <span class="gradient-text">Pure Liquid Art.</span>
+      </h1>
+
+      <!-- Hero Subtitle -->
+      <p class="hero-subtitle">
+        An aesthetic YouTube Music client engineered with frosted liquid glass, 24-bit Hi-Res lossless audio, synced Apple-style lyrics, gapless playback, and decentralized peer-to-peer listening.
+      </p>
+
+      <!-- Primary Action Buttons -->
+      <div class="hero-actions">
+        <!-- Direct Download Trigger -->
+        <button class="glass-btn glass-btn-primary btn-download-apk" id="btn-main-download" style="padding: 16px 36px; font-size: 16px;">
+          <span>Download Android APK</span>
+          <span class="current-version-label" style="background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 6px; font-size: 12px;">v1.7.4</span>
+          <span style="font-size: 18px;">↓</span>
+        </button>
+
+        <a href="releases.html" class="glass-btn" style="padding: 16px 32px; font-size: 16px;">
+          <span>View All Releases</span>
+          <span style="opacity: 0.7;">→</span>
+        </a>
+      </div>
+
+      <!-- Trust Badges & Stats -->
+      <div class="hero-stats">
+        <div class="stat-item">
+          <span class="stat-dot"></span>
+          <span>100% Free &amp; Open Source</span>
+        </div>
+        <div class="stat-item">
+          <span>•</span>
+          <span>Hi-Res Lossless 24-bit FLAC</span>
+        </div>
+        <div class="stat-item">
+          <span>•</span>
+          <span>No Ads or Trackers</span>
+        </div>
+      </div>
+
+      <!-- Live Audio Waveform Capsule -->
+      <div class="live-visualizer-capsule glass-nav-pill" style="margin-top: 36px;">
+        <div class="visualizer-bars">
+          <div class="v-bar"></div>
+          <div class="v-bar"></div>
+          <div class="v-bar"></div>
+          <div class="v-bar"></div>
+          <div class="v-bar"></div>
+        </div>
+        <span>Ultra Low Latency True Crossfade Active · 192 kHz Sampling</span>
+      </div>
+
+      <!-- Hero Mockup Phone Showcase -->
+      <div class="hero-mockup-wrapper">
+        <div class="phone-mockup" style="transform-style: preserve-3d;">
+          <!-- Dynamic Island -->
+          <div class="phone-notch">
+            <span class="notch-camera"></span>
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: #00f2fe; box-shadow: 0 0 6px #00f2fe;"></div>
+          </div>
+
+          <!-- Screen Preview Placeholder -->
+          <div class="phone-screen">
+            <img src="assets/screenshots/preview-1.svg" alt="Mhorpix Now Playing Screen Preview" id="hero-screen-img">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="section container" id="features">
+      <div class="section-header">
+        <span class="section-tag">Audio &amp; Visual Excellence</span>
+        <h2 class="section-title">Designed for Audiophiles. <br><span class="gradient-text">Styled for Royalty.</span></h2>
+        <p class="section-desc">Every screen and waveform has been meticulously crafted to deliver unprecedented fidelity, breathtaking liquid refraction, and complete personalization.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1: Lossless Audio -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">🎧</div>
+          <h3 class="feature-title">Hi-Res Lossless Audio</h3>
+          <p class="feature-text">
+            Studio-master FLAC and ALAC streams with YouTube Music as fallback. Experience clean 24-bit 96kHz/192kHz audio without compression artifacts or dynamic throttling.
+          </p>
+        </div>
+
+        <!-- Feature 2: Synced Lyrics -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">✨</div>
+          <h3 class="feature-title">Apple-Style Synced Lyrics</h3>
+          <p class="feature-text">
+            Word and syllable-accurate vocal highlighting powered by multi-source lyrics providers. Smooth kinetic animations track every beat in real time.
+          </p>
+        </div>
+
+        <!-- Feature 3: Liquid Glass UI -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">🔮</div>
+          <h3 class="feature-title">Frosted Liquid Glass</h3>
+          <p class="feature-text">
+            Translucent Haze glass bars with specular refraction and artwork-driven dynamic theming. Seamlessly adapts to dominant album colors on the fly.
+          </p>
+        </div>
+
+        <!-- Feature 4: Y2K Frutiger Aero -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">💿</div>
+          <h3 class="feature-title">Y2K Nostalgic Theme</h3>
+          <p class="feature-text">
+            One-touch transformation into early-2000s Frutiger Aero nostalgia. Features silver chrome gradients, glossy Aqua buttons, and animated water droplets.
+          </p>
+        </div>
+
+        <!-- Feature 5: P2P Listen Together -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">👥</div>
+          <h3 class="feature-title">Peer-to-Peer Listening</h3>
+          <p class="feature-text">
+            Jam with nearby friends over local Wi-Fi or Hotspot with zero cloud latency. Instant QR-code scanner pairing, collaborative queueing, and live chat.
+          </p>
+        </div>
+
+        <!-- Feature 6: True Gapless & Automix -->
+        <div class="feature-card liquid-glass">
+          <div class="feature-icon-box">🎚️</div>
+          <h3 class="feature-title">Gapless &amp; DJ Automix</h3>
+          <p class="feature-text">
+            Adjustable 0–12 second true crossfade, skip silence, and beta DJ-style transitions with real-time beat matching and tempo stretching.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- App Previews & Screenshots Section -->
+    <section class="section screenshots-section container" id="previews">
+      <div class="section-header">
+        <span class="section-tag">Interface Showcase</span>
+        <h2 class="section-title">A Look Inside <span class="gradient-text">Mhorpix</span></h2>
+        <p class="section-desc">
+          Explore the clean, distraction-free interface across mobile and desktop.
+          <br><small style="color: #64748b;">(Placeholders are ready in <code>website/assets/screenshots/</code> for your high-res screenshots)</small>
+        </p>
+      </div>
+
+      <!-- Gallery Filter Tabs -->
+      <div class="gallery-tabs">
+        <button class="gallery-tab-btn active" data-filter="all">All Screens</button>
+        <button class="gallery-tab-btn" data-filter="player">Now Playing</button>
+        <button class="gallery-tab-btn" data-filter="lyrics">Live Lyrics</button>
+        <button class="gallery-tab-btn" data-filter="y2k">Y2K Aero Mode</button>
+        <button class="gallery-tab-btn" data-filter="desktop">Desktop Edition</button>
+      </div>
+
+      <!-- Screenshots Showcase Grid -->
+      <div class="gallery-container">
+        <!-- Preview 1: Now Playing -->
+        <div class="screenshot-item" data-category="player">
+          <div class="phone-mockup">
+            <div class="phone-notch"><span class="notch-camera"></span></div>
+            <div class="phone-screen">
+              <img src="assets/screenshots/preview-1.svg" alt="Now Playing Screen">
+            </div>
+          </div>
+          <span class="screenshot-label">Now Playing &amp; Hi-Res Audio</span>
+        </div>
+
+        <!-- Preview 2: Live Lyrics -->
+        <div class="screenshot-item" data-category="lyrics">
+          <div class="phone-mockup">
+            <div class="phone-notch"><span class="notch-camera"></span></div>
+            <div class="phone-screen">
+              <img src="assets/screenshots/preview-2.svg" alt="Live Synced Lyrics">
+            </div>
+          </div>
+          <span class="screenshot-label">Word-by-Word Synced Lyrics</span>
+        </div>
+
+        <!-- Preview 3: Y2K Frutiger Aero -->
+        <div class="screenshot-item" data-category="y2k">
+          <div class="phone-mockup">
+            <div class="phone-notch"><span class="notch-camera"></span></div>
+            <div class="phone-screen">
+              <img src="assets/screenshots/preview-3.svg" alt="Y2K Frutiger Aero Mode">
+            </div>
+          </div>
+          <span class="screenshot-label">Y2K Frutiger Aero &amp; Aqua Buttons</span>
+        </div>
+      </div>
+
+      <!-- Desktop App Showcase Mockup -->
+      <div class="screenshot-item" data-category="desktop" style="max-width: 1000px; width: 100%; margin: 50px auto 0;">
+        <div class="desktop-mockup">
+          <div class="desktop-screen">
+            <img src="assets/screenshots/desktop-preview.svg" alt="Mhorpix Windows Desktop App">
+          </div>
+        </div>
+        <span class="screenshot-label" style="margin-top: 14px;">Windows Desktop Edition (Installer, MSI &amp; Portable)</span>
+      </div>
+    </section>
+
+    <!-- Liquid Glass Interactive Playground (Inspired by ybouane/liquidglass) -->
+    <section class="section playground-section container" id="playground">
+      <div class="section-header">
+        <span class="section-tag">Interactive Physics</span>
+        <h2 class="section-title">Experience <span class="gradient-text">Liquid Glass</span> Live</h2>
+        <p class="section-desc">Move your cursor or touch the glass tile to watch specular highlights, refraction, and chromatic aberration react dynamically in real time.</p>
+      </div>
+
+      <div class="playground-card liquid-glass">
+        <!-- Interactive Controls -->
+        <div class="playground-controls">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Refraction Index</span>
+              <span id="val-refraction">0.65</span>
+            </div>
+            <input type="range" id="slider-refraction" class="glass-slider" min="0" max="1" step="0.01" value="0.65">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Backdrop Blur</span>
+              <span id="val-blur">24px</span>
+            </div>
+            <input type="range" id="slider-blur" class="glass-slider" min="0" max="48" step="1" value="24">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Chromatic Dispersion</span>
+              <span id="val-chroma">0.08</span>
+            </div>
+            <input type="range" id="slider-chroma" class="glass-slider" min="0" max="0.25" step="0.01" value="0.08">
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Specular Lighting</span>
+              <span id="val-specular">0.85</span>
+            </div>
+            <input type="range" id="slider-specular" class="glass-slider" min="0" max="1.5" step="0.05" value="0.85">
+          </div>
+        </div>
+
+        <!-- Playground Canvas Box -->
+        <div class="playground-canvas-box">
+          <div id="playground-glass-tile" class="liquid-glass interactive-glass-tile">
+            <div style="font-size: 28px; margin-bottom: 6px;">🔮</div>
+            <div style="font-weight: 700; color: #fff; font-size: 16px;">Liquid Glass Lens</div>
+            <div style="font-size: 12px; color: var(--accent-cyan);">Move Mouse / Drag Touch</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Latest GitHub Releases Section -->
+    <section class="section container" id="releases">
+      <div class="section-header">
+        <span class="section-tag">Direct Downloads</span>
+        <h2 class="section-title">Latest <span class="gradient-text">GitHub Release</span></h2>
+        <p class="section-desc">Direct downloads synchronized with the official GitHub repository. When a new release is published, this card updates automatically.</p>
+      </div>
+
+      <!-- Dynamic Release Card injected by releases.js -->
+      <div id="home-release-container">
+        <!-- Rendered dynamically by releases.js -->
+        <div class="releases-card liquid-glass" style="text-align: center; padding: 40px;">
+          <div style="font-size: 28px; margin-bottom: 12px;">⏳</div>
+          <h3 style="color: #fff;">Fetching Latest Release from GitHub...</h3>
+          <p style="color: #94a3b8; font-size: 14px; margin-top: 6px;">Checking ShadowByte01/Mhorpix-Music releases</p>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 32px;">
+        <a href="releases.html" class="glass-btn" style="padding: 12px 28px;">
+          <span>Browse All Releases &amp; Architecture Builds</span>
+          <span>→</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer container">
+    <div class="footer-content">
+      <div class="footer-brand-col">
+        <div class="brand" style="margin-bottom: 12px;">
+          <img src="assets/logo.png" alt="Mhorpix Logo" class="brand-logo">
+          <span class="brand-name">Mhorpix</span>
+        </div>
+        <p class="footer-desc">
+          An aesthetic, non-commercial YouTube Music client crafted with frosted liquid glass and Hi-Res lossless audio playback.
+        </p>
+      </div>
+
+      <div class="footer-links-col">
+        <div>
+          <h4 class="footer-heading">Navigation</h4>
+          <ul class="footer-list">
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#previews" class="footer-link">App Previews</a></li>
+            <li><a href="releases.html" class="footer-link">Download APK</a></li>
+            <li><a href="#playground" class="footer-link">Liquid Glass</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-heading">Open Source</h4>
+          <ul class="footer-list">
+            <li><a href="https://github.com/ShadowByte01/Mhorpix-Music" target="_blank" rel="noopener noreferrer" class="footer-link">GitHub Repository</a></li>
+            <li><a href="https://github.com/ShadowByte01/Mhorpix-Music/releases" target="_blank" rel="noopener noreferrer" class="footer-link">Release Notes</a></li>
+            <li><a href="https://github.com/ShadowByte01/Mhorpix-Music/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link">GPL-3.0 License</a></li>
+            <li><a href="https://github.com/ybouane/liquidglass" target="_blank" rel="noopener noreferrer" class="footer-link">LiquidGlass Shader</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>Mhorpix is an independent open-source project and is not affiliated with, endorsed by, or connected to YouTube or Google in any way.</p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/liquidglass.js"></script>
+  <script src="js/releases.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

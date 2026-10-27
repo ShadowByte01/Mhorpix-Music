@@ -19,11 +19,15 @@ object AndroidPresence {
 
     /** Call once from [Application.onCreate], on the main thread. */
     fun install(app: Application) {
-        val presence = Presence(PresencePlatform.Android, installId(app))
-        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
-            override fun onStart(owner: LifecycleOwner) = presence.setOpen(true)
-            override fun onStop(owner: LifecycleOwner) = presence.setOpen(false)
-        })
+        runCatching {
+            val presence = Presence(PresencePlatform.Android, installId(app))
+            ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) = presence.setOpen(true)
+                override fun onStop(owner: LifecycleOwner) = presence.setOpen(false)
+            })
+        }.onFailure {
+            android.util.Log.w("Mhorpix", "Could not install AndroidPresence: ${it.message}")
+        }
     }
 
     /** Random and local to this install: not the device, and not the account. */

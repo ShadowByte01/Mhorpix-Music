@@ -249,6 +249,8 @@ import com.music.mhorpix.ui.components.TopBarAccountButton
 import com.music.mhorpix.ui.components.LocalY2kMode
 import com.music.mhorpix.ui.components.FrutigerAeroBackground
 import com.music.mhorpix.ui.components.Y2kPalette
+import com.music.mhorpix.ui.components.Y2kTransitionOverlay
+import com.music.mhorpix.ui.player.Y2kCdPlayer
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Brush
@@ -355,11 +357,11 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         // Before the composition, so a cold launch from a widget's artwork has
         // the request already standing by the time MhorpixApp first reads it.
-        PlayerDeepLink.consume(intent)
-        JamInviteLink.consume(intent)
-        UpdateDeepLink.consume(intent)
+        runCatching { PlayerDeepLink.consume(intent) }
+        runCatching { JamInviteLink.consume(intent) }
+        runCatching { UpdateDeepLink.consume(intent) }
         // Likewise for a link tapped or shared from another app — see [MusicLink].
-        MusicLink.consume(intent)
+        runCatching { MusicLink.consume(intent) }
         setContent {
             val theme by AppSettings.themeMode.collectAsStateWithLifecycle()
             val highPerformance by AppSettings.highPerformanceMode.collectAsStateWithLifecycle()
@@ -372,6 +374,7 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(highPerformance, performanceRefreshRate, composeView) {
                 applyPerformanceMode(highPerformance, performanceRefreshRate, composeView)
             }
+
             val darkTheme = when {
                 y2kMode -> false // Y2K is always light/silver
                 theme == ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -481,17 +484,22 @@ class MainActivity : AppCompatActivity() {
      * hardware limits, which is why Settings describes this as a preference.
      */
     private fun applyPerformanceMode(enabled: Boolean, refreshRate: Int, composeView: View) {
-        val supportedRefreshRate = composeView.display.resolvePerformanceRefreshRate(refreshRate)
-        window.attributes = window.attributes.apply {
-            preferredRefreshRate = if (enabled) supportedRefreshRate.toFloat() else 0f
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            window.setFrameRatePowerSavingsBalanced(!enabled)
-            composeView.requestedFrameRate = if (enabled) {
-                supportedRefreshRate.toFloat()
-            } else {
-                View.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT
+        runCatching {
+            val display = composeView.display ?: window.windowManager?.defaultDisplay
+            val supportedRefreshRate = display.resolvePerformanceRefreshRate(refreshRate)
+            window.attributes = window.attributes.apply {
+                preferredRefreshRate = if (enabled) supportedRefreshRate.toFloat() else 0f
             }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                window.setFrameRatePowerSavingsBalanced(!enabled)
+                composeView.requestedFrameRate = if (enabled) {
+                    supportedRefreshRate.toFloat()
+                } else {
+                    View.REQUESTED_FRAME_RATE_CATEGORY_DEFAULT
+                }
+            }
+        }.onFailure {
+            android.util.Log.w("Mhorpix", "Could not apply performance refresh rate: ${it.message}")
         }
     }
 
@@ -628,6 +636,7 @@ private fun MhorpixApp(
     var showListenTogether by rememberSaveable { mutableStateOf(false) }
     var showP2pListenTogether by rememberSaveable { mutableStateOf(false) }
     var showP2pScanner by rememberSaveable { mutableStateOf(false) }
+    var showY2kTransition by remember { mutableStateOf(false) }
     var showEqualizer by rememberSaveable { mutableStateOf(false) }
     var showSpotifyCanvasAuth by remember { mutableStateOf(false) }
 
@@ -2279,6 +2288,23 @@ private fun MhorpixApp(
                         it.memberId == playback.startedBy
                     }?.displayName?.takeIf(String::isNotBlank)
             }
+        if (y2kMode) {
+            Y2kCdPlayer(
+                song = displayedSong,
+                isPlaying = player.isPlaying,
+                position = player.position,
+                durationMs = player.durationMs,
+                onPlayPause = { togglePlayPause() },
+                onNext = { controller?.seekToNextMediaItem() },
+                onPrevious = { controller?.seekToPrevious() },
+                onSeekFraction = { fraction ->
+                    val duration = player.durationMs
+                    if (duration > 0) controller?.seekTo((fraction * duration).toLong())
+                },
+                onBack = {},
+                onOpenMenu = {},
+            )
+        } else {
         NowPlayingScreen(
             song = displayedSong,
             playedBy = playedBy,
@@ -2517,6 +2543,7 @@ private fun MhorpixApp(
                 }
             },
         )
+        }
     }
 
     Box(
@@ -2882,24 +2909,6 @@ private fun MhorpixApp(
                             },
                             onSpotifyCanvasAuth = { showSpotifyCanvasAuth = true },
                             onAppLanguage = { showAppLanguage = true },
-                            onCheckForUpdates = {
-                                if (updateNotice != null) {
-                                    showUpdateDialog = true
-                                } else {
-                                    scope.launch {
-                                        Toast.makeText(context, "Checking for updates…", Toast.LENGTH_SHORT).show()
-                                        AppUpdateChecker.check(context)
-                                        if (AppUpdateChecker.available.value != null) {
-                                            showUpdateDialog = true
-                                        } else {
-                                            val currentVer = runCatching {
-                                                context.packageManager.getPackageInfo(context.packageName, 0).versionName
-                                            }.getOrNull() ?: BuildConfig.VERSION_NAME
-                                            Toast.makeText(context, "Mhorpix is up to date (v$currentVer)", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                }
-                            },
                             contentPadding = listPadding,
                         )
                     } else if (page != null && page.browseId.isDeviceFolder()) {
@@ -3835,7 +3844,10 @@ private fun MhorpixApp(
                             }
                             // Y2K mode toggle — sparkles icon. When on, the whole app
                             // transforms into a nostalgic early-2000s chrome + Aqua UI.
-                            IconButton(onClick = { AppSettings.setY2kMode(!y2kMode) }) {
+                            IconButton(onClick = {
+                                if (!y2kMode) showY2kTransition = true
+                                AppSettings.setY2kMode(!y2kMode)
+                            }) {
                                 Icon(
                                     Icons.Rounded.AutoAwesome,
                                     contentDescription = "Y2K Mode",
@@ -5287,6 +5299,10 @@ private fun MhorpixApp(
                 },
                 scope = scope,
             )
+        }
+
+        if (showY2kTransition) {
+            Y2kTransitionOverlay(visible = true) { showY2kTransition = false }
         }
 
         if (confirmJioSaavn) {

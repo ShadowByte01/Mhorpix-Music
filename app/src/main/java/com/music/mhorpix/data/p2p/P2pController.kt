@@ -1,4 +1,4 @@
-package com.music.mhorpix.data.p2p
+﻿package com.music.mhorpix.data.p2p
 
 import android.content.Context
 import android.net.nsd.NsdManager
@@ -49,7 +49,7 @@ object P2pDeviceIdentity {
     data class Identity(val id: String, val name: String)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * The P2P Listen Together controller. Owns the room state and the transport.
@@ -84,7 +84,7 @@ object P2pController {
 
     // Host-side state
     private var serverSocket: ServerSocket? = null
-    private val guestSockets = ConcurrentHashMap<String, Socket>() // deviceId → socket
+    private val guestSockets = ConcurrentHashMap<String, Socket>() // deviceId â†’ socket
     private var nsdManager: NsdManager? = null
     private var nsdService: NsdServiceInfo? = null
     private var hostRoom: P2pRoom? = null
@@ -96,9 +96,9 @@ object P2pController {
         identity = P2pDeviceIdentity.get(context)
     }
 
-    // ─────────────────────────── host ───────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ host â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    /** Creates a room asynchronously — the server socket + NSD registration
+    /** Creates a room asynchronously â€” the server socket + NSD registration
      *  run on Dispatchers.IO so the UI thread is never blocked. */
     fun createRoom(context: Context, initialTrack: P2pTrack? = null) {
         if (_mode.value != Mode.IDLE) return
@@ -251,7 +251,7 @@ object P2pController {
         }
     }
 
-    // ─────────────────────────── guest ──────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ guest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     fun joinRoom(info: P2pConnectionInfo, context: Context): Result<Unit> {
         if (_mode.value != Mode.IDLE) return Result.failure(IllegalStateException("Already in a session"))
@@ -287,7 +287,7 @@ object P2pController {
         _mode.value = Mode.GUEST
         _connection.value = Connection.CONNECTING
         nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-        lateinit var listener: NsdManager.DiscoveryListener
+        var listener: NsdManager.DiscoveryListener? = null
         listener = object : NsdManager.DiscoveryListener {
             override fun onDiscoveryStarted(serviceType: String) {}
             override fun onDiscoveryStopped(serviceType: String) {}
@@ -300,17 +300,17 @@ object P2pController {
                         override fun onServiceResolved(si: NsdServiceInfo) {
                             val info = P2pConnectionInfo(code, si.host.hostAddress ?: return, si.port)
                             joinRoom(info, context)
-                            nsdManager?.stopServiceDiscovery(listener)
+                            listener?.let { runCatching { nsdManager?.stopServiceDiscovery(it) } }
                         }
                     })
                 }
             }
             override fun onServiceLost(si: NsdServiceInfo) {}
         }
-        runCatching { nsdManager?.discoverServices("_mhorpix._tcp.", NsdManager.PROTOCOL_DNS_SD, listener) }
+        listener?.let { runCatching { nsdManager?.discoverServices("_mhorpix._tcp.", NsdManager.PROTOCOL_DNS_SD, it) } }
     }
 
-    // ─────────────────────────── controls (guest → host) ──────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ controls (guest â†’ host) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun sendToHost(frame: P2pFrame) {
         val socket = guestSocket ?: return
@@ -329,7 +329,7 @@ object P2pController {
     fun sendChat(from: String, text: String) = sendToHost(P2pFrame.Chat(from, text, System.currentTimeMillis()))
     fun setAutoplay(enabled: Boolean) = sendToHost(P2pFrame.SetAutoplay(enabled))
 
-    // ─────────────────────────── host controls (host → local state) ───────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ host controls (host â†’ local state) â”€â”€â”€â”€â”€â”€â”€
 
     fun hostPlay() = updateHostRoom { it.copy(isPlaying = true, anchorMs = System.currentTimeMillis()) }
     fun hostPause() = updateHostRoom { it.copy(isPlaying = false) }
@@ -349,7 +349,7 @@ object P2pController {
     fun seekTo(ms: Long) { if (_mode.value == Mode.HOST) hostSeek(ms) else seek(ms) }
     fun skipNext() { if (_mode.value == Mode.HOST) hostNext() else next() }
 
-    // ─────────────────────────── leave / teardown ────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ leave / teardown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     fun leaveRoom(context: Context) {
         val me = identity
@@ -378,7 +378,7 @@ object P2pController {
         _room.value = null
     }
 
-    // ─────────────────────────── helpers ─────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     fun getConnectionInfo(): P2pConnectionInfo? {
         val room = hostRoom ?: return null
