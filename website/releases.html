@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Releases — Mhorpix</title>
-  <meta name="description" content="Download all Mhorpix releases including Android APK, Windows installer, and portable builds.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>All Releases — Mhorpix</title>
+  <meta name="description" content="Download all Mhorpix releases: Android APK, Windows installer, and portable builds. Always up to date from GitHub.">
   <meta name="theme-color" content="#000000">
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,24 +103,21 @@
     <!-- Navbar -->
     <header id="navbar">
       <div class="nav-inner">
-        <a href="index.html" class="brand">
+        <!-- Logo only -->
+        <a href="index.html" class="brand" aria-label="Mhorpix home">
           <img src="assets/logo.png" alt="Mhorpix" class="brand-logo">
-          <span class="brand-name">Mhorpix</span>
         </a>
         <nav class="nav-links">
           <a href="index.html#features" class="nav-a">Features</a>
           <a href="index.html#previews" class="nav-a">Previews</a>
           <a href="index.html#playground" class="nav-a">Liquid Glass</a>
-          <a href="releases.html" class="nav-a" style="color:#fff;">Releases</a>
+          <a href="releases.html" class="nav-a" style="color:#fff">Releases</a>
           <a href="https://github.com/ShadowByte01/Mhorpix-Music" target="_blank" rel="noopener" class="nav-a">GitHub ↗</a>
         </nav>
         <div class="nav-right">
-          <div class="lg-btn-wrap" id="nav-download-wrap">
-            <button class="lg-btn-inner btn-download-apk">
-              <span class="btn-label">Download APK</span>
-              <span class="btn-ver current-version-label">v1.7.4</span>
-            </button>
-          </div>
+          <button class="glass-btn btn-download-apk">
+            Download APK <span class="btn-ver current-version-label">v1.7.4</span>
+          </button>
           <button class="burger" id="burger-btn" aria-label="Menu">
             <span></span><span></span><span></span>
           </button>
@@ -208,7 +205,6 @@
 
   <script src="js/noise.js"></script>
   <script src="js/releases.js"></script>
-  <script type="module" src="js/glass-init.js"></script>
   <script src="js/ui.js"></script>
   <script>
     /* Add expand/collapse to older release cards after they render */
